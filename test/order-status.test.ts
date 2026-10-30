@@ -4,16 +4,18 @@ import { ORDER_STATUSES, nextOrderStatus, type OrderEvent, type OrderStatus } fr
 const completedPaid: OrderEvent = { type: 'checkout.session.completed', paymentStatus: 'paid' };
 const completedUnpaid: OrderEvent = { type: 'checkout.session.completed', paymentStatus: 'unpaid' };
 const completedNoPayment: OrderEvent = { type: 'checkout.session.completed', paymentStatus: 'no_payment_required' };
+const asyncSucceeded: OrderEvent = { type: 'checkout.session.async_payment_succeeded', paymentStatus: 'paid' };
+const asyncFailed: OrderEvent = { type: 'checkout.session.async_payment_failed', paymentStatus: 'unpaid' };
 const expired: OrderEvent = { type: 'checkout.session.expired' };
 const refunded: OrderEvent = { type: 'charge.refunded' };
 const disputed: OrderEvent = { type: 'charge.dispute.created' };
 const unknown: OrderEvent = { type: 'customer.created' };
 
-const events = { completedPaid, completedUnpaid, completedNoPayment, expired, refunded, disputed, unknown };
+const events = { completedPaid, completedUnpaid, completedNoPayment, asyncSucceeded, asyncFailed, expired, refunded, disputed, unknown };
 
 // Tabla completa estado × evento. Todo lo no listado aquí debe dejar el estado igual.
 const allowed: Partial<Record<OrderStatus, Partial<Record<keyof typeof events, OrderStatus>>>> = {
-  pending_payment: { completedPaid: 'paid', expired: 'cancelled' },
+  pending_payment: { completedPaid: 'paid', asyncSucceeded: 'paid', asyncFailed: 'cancelled', expired: 'cancelled' },
   paid: { refunded: 'refunded', disputed: 'disputed' },
 };
 
@@ -38,6 +40,12 @@ describe('nextOrderStatus', () => {
 
   it('refund antes de pagar no cambia el pedido', () => {
     expect(nextOrderStatus('pending_payment', refunded)).toBe('pending_payment');
+  });
+
+  it('pago diferido: completed unpaid no paga y el async_payment_succeeded posterior sí', () => {
+    const pending = nextOrderStatus('pending_payment', completedUnpaid);
+    expect(pending).toBe('pending_payment');
+    expect(nextOrderStatus(pending, asyncSucceeded)).toBe('paid');
   });
 
   it('paymentStatus ausente en completed no paga', () => {

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { z } from 'zod';
 import { withTransaction } from '../../db/tx.js';
 import { AppError } from '../../http/errors.js';
@@ -176,6 +176,7 @@ interface LockedOrder {
   email: string;
   currency: string;
   total_cents: number;
+  stripe_payment_intent_id: string | null;
 }
 
 async function handleWebhook(
@@ -192,15 +193,23 @@ async function handleWebhook(
     );
     if (ins.rowCount !== 1) return { received: true, duplicate: true };
 
-    if (!event.orderId || !UUID_RE.test(event.orderId)) return { received: true };
+    const orderId = await findOrderId(client, event);
+    if (!orderId) return { received: true };
     const { rows } = await client.query<LockedOrder>(
-      `select id, status, email, currency, total_cents from orders where id = $1 for update`,
-      [event.orderId],
+      `select id, status, email, currency, total_cents, stripe_payment_intent_id
+       from orders where id = $1 for update`,
+      [orderId],
     );
     const order = rows[0];
     if (!order) {
-      req.log.warn({ eventId: event.id, orderId: event.orderId }, 'webhook for unknown order');
+      req.log.warn({ eventId: event.id, orderId }, 'webhook for unknown order');
       return { received: true };
+    }
+    if (event.paymentIntentId && order.stripe_payment_intent_id !== event.paymentIntentId) {
+      await client.query(`update orders set stripe_payment_intent_id = $2, updated_at = now() where id = $1`, [
+        order.id,
+        event.paymentIntentId,
+      ]);
     }
 
     const next = nextOrderStatus(order.status, event);
@@ -240,6 +249,17 @@ async function handleWebhook(
     }
     return { received: true };
   });
+}
+
+/** Pedido del evento: por metadata.order_id y, si falta, por payment_intent ya guardado. */
+async function findOrderId(client: PoolClient, event: WebhookEvent): Promise<string | null> {
+  if (event.orderId && UUID_RE.test(event.orderId)) return event.orderId;
+  if (!event.paymentIntentId) return null;
+  const { rows } = await client.query<{ id: string }>(
+    `select id from orders where stripe_payment_intent_id = $1`,
+    [event.paymentIntentId],
+  );
+  return rows[0]?.id ?? null;
 }
 
 function amountMatches(order: LockedOrder, event: WebhookEvent): boolean {

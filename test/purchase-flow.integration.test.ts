@@ -154,4 +154,56 @@ describe.skipIf(!testDbUrl)('flujo de compra end-to-end', () => {
     expect(await releaseExpired(pool, new Date(Date.now() + 365 * 86_400_000))).toBe(0);
     expect(await stock()).toEqual({ on_hand: 1, reserved: 0 });
   });
+
+  it('reembolso sin metadata se liga al pedido por payment_intent', async () => {
+    const cartId = await addToNewCart(1);
+    const checkout = await app.inject({
+      method: 'POST',
+      url: '/checkout',
+      payload: { cartId, email: 'reembolso@example.com' },
+      headers: { 'idempotency-key': randomUUID() },
+    });
+    const { orderId } = checkout.json() as { orderId: string };
+    const paymentIntent = `pi_${randomUUID()}`;
+
+    const send = (type: string, object: Record<string, unknown>) => {
+      const payload = JSON.stringify({ id: `evt_${randomUUID()}`, object: 'event', type, data: { object } });
+      return app.inject({
+        method: 'POST',
+        url: '/webhooks/stripe',
+        payload,
+        headers: {
+          'content-type': 'application/json',
+          'stripe-signature': Stripe.webhooks.generateTestHeaderString({ payload, secret: WHSEC }),
+        },
+      });
+    };
+
+    const paid = await send('checkout.session.completed', {
+      object: 'checkout.session',
+      id: `cs_${orderId}`,
+      client_reference_id: orderId,
+      metadata: { order_id: orderId },
+      payment_status: 'paid',
+      amount_total: 2500,
+      currency: 'eur',
+      payment_intent: paymentIntent,
+    });
+    expect(paid.statusCode).toBe(200);
+
+    // El cargo llega sin metadata: solo el payment_intent identifica el pedido.
+    const refund = await send('charge.refunded', {
+      object: 'charge',
+      id: `ch_${randomUUID()}`,
+      payment_intent: paymentIntent,
+      metadata: {},
+    });
+    expect(refund.statusCode).toBe(200);
+
+    const { rows } = await pool.query<{ status: string; stripe_payment_intent_id: string }>(
+      'select status, stripe_payment_intent_id from orders where id = $1',
+      [orderId],
+    );
+    expect(rows[0]).toEqual({ status: 'refunded', stripe_payment_intent_id: paymentIntent });
+  });
 });

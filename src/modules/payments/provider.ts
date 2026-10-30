@@ -31,6 +31,8 @@ export interface WebhookEvent {
   type: string;
   /** metadata.order_id (o client_reference_id) si el objeto lo trae. */
   orderId: string | null;
+  /** payment_intent del objeto (sesión, cargo o disputa), si aplica. Liga eventos sin metadata al pedido. */
+  paymentIntentId: string | null;
   /** payment_status de la Checkout Session, si aplica. */
   paymentStatus: string | null;
   /** Importe total cobrado en céntimos, si aplica (para cuadrar con el pedido). */

@@ -29,13 +29,19 @@ describe.skipIf(!testDbUrl)('flujo de compra end-to-end', () => {
   let pool: Pool;
   let app: FastifyInstance;
   let payments: FakePaymentProvider;
+  const sender = new CapturingEmailSender();
   let variantId: string;
 
   beforeAll(async () => {
     pool = await freshDb();
     variantId = await seedVariant(pool, { sku: 'TEE-BLK-M', priceCents: 2500, onHand: 3 });
     payments = new FakePaymentProvider(WHSEC);
-    app = buildApp({ db: pool, payments, appUrl: 'http://localhost:3000' });
+    app = buildApp({
+      db: pool,
+      payments,
+      appUrl: 'http://localhost:3000',
+      outboxHandlers: { [ORDER_CONFIRMATION_TOPIC]: orderConfirmationHandler(sender) },
+    });
     await app.ready();
   });
 
@@ -43,6 +49,14 @@ describe.skipIf(!testDbUrl)('flujo de compra end-to-end', () => {
     await app.close();
     await pool.end();
   });
+
+  async function until(cond: () => boolean, timeoutMs = 3000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (!cond()) {
+      if (Date.now() > deadline) throw new Error('timeout esperando la condición');
+      await new Promise((r) => setTimeout(r, 20));
+    }
+  }
 
   /** Evento de Stripe firmado con el secreto de tests. */
   function signedEvent(type: string, object: Record<string, unknown>) {
@@ -127,10 +141,10 @@ describe.skipIf(!testDbUrl)('flujo de compra end-to-end', () => {
     expect(rows[0]?.status).toBe('paid');
     expect(await stock()).toEqual({ on_hand: 1, reserved: 0 });
 
-    const sender = new CapturingEmailSender();
+    // El email sale solo tras el pago (sin worker); volver a procesar el outbox no lo duplica.
+    await until(() => sender.sent.length > 0);
     const handlers = { [ORDER_CONFIRMATION_TOPIC]: orderConfirmationHandler(sender) };
     const opts = { batchSize: 10, lockMs: 30_000, maxAttempts: 3, handlerTimeoutMs: 5_000 };
-    await processOutboxBatch(pool, handlers, opts);
     await processOutboxBatch(pool, handlers, opts);
     expect(sender.sent).toHaveLength(1);
     expect(sender.sent[0]?.to).toBe('cliente@example.com');

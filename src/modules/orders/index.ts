@@ -205,11 +205,18 @@ async function handleWebhook(
       req.log.warn({ eventId: event.id, orderId }, 'webhook for unknown order');
       return { received: true };
     }
-    if (event.paymentIntentId && order.stripe_payment_intent_id !== event.paymentIntentId) {
+    if (event.paymentIntentId && order.stripe_payment_intent_id === null) {
       await client.query(`update orders set stripe_payment_intent_id = $2, updated_at = now() where id = $1`, [
         order.id,
         event.paymentIntentId,
       ]);
+    } else if (event.paymentIntentId && order.stripe_payment_intent_id !== event.paymentIntentId) {
+      // No se sobrescribe: un payment_intent distinto es una incoherencia para conciliación, y
+      // pisarlo podría chocar con el unique y hacer que Stripe reintente el evento sin fin.
+      req.log.error(
+        { eventId: event.id, orderId: order.id, stored: order.stripe_payment_intent_id, got: event.paymentIntentId, code: 'PAYMENT_INTENT_MISMATCH' },
+        'payment intent mismatch',
+      );
     }
 
     const next = nextOrderStatus(order.status, event);

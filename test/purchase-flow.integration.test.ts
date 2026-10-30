@@ -5,6 +5,7 @@ import Stripe from 'stripe';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { releaseExpired } from '../src/modules/inventory/index.js';
+import { cancelAbandonedOrders } from '../src/modules/orders/index.js';
 import { type EmailMessage, type EmailSender, orderConfirmationHandler, ORDER_CONFIRMATION_TOPIC } from '../src/modules/notifications/email.js';
 import { processOutboxBatch } from '../src/modules/notifications/outbox.js';
 import { FakePaymentProvider } from '../src/modules/payments/fake.js';
@@ -242,5 +243,69 @@ describe.skipIf(!testDbUrl)('flujo de compra end-to-end', () => {
     expect((await signedEvent('checkout.session.async_payment_succeeded', { ...session, payment_status: 'paid' })).statusCode).toBe(200);
     expect(await statusOf()).toBe('paid');
     expect(await stock()).toEqual({ on_hand: 1, reserved: 0 });
+  });
+
+  /** Checkout de una unidad y sesión de Stripe simulada para un pago por transferencia. */
+  async function transferCheckout(email: string) {
+    await pool.query('update inventory set on_hand = on_hand + 1 where variant_id = $1', [variantId]);
+    const cartId = await addToNewCart(1);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/checkout',
+      payload: { cartId, email },
+      headers: { 'idempotency-key': randomUUID() },
+    });
+    const { orderId } = res.json() as { orderId: string };
+    const session = {
+      object: 'checkout.session',
+      id: `cs_${orderId}`,
+      client_reference_id: orderId,
+      metadata: { order_id: orderId },
+      amount_total: 2500,
+      currency: 'eur',
+      payment_intent: `pi_${randomUUID()}`,
+    };
+    const statusOf = async () =>
+      (await pool.query<{ status: string }>('select status from orders where id = $1', [orderId])).rows[0]?.status;
+    return { orderId, session, statusOf };
+  }
+
+  it('transferencia: la reserva se amplía y el barrido no la libera antes de plazo', async () => {
+    const before = await stock();
+    const { orderId, session, statusOf } = await transferCheckout('transfer@example.com');
+    expect((await signedEvent('checkout.session.completed', { ...session, payment_status: 'unpaid' })).statusCode).toBe(200);
+
+    const { rows } = await pool.query<{ expires_at: Date }>(
+      `select expires_at from stock_reservations where order_id = $1 and status = 'active'`,
+      [orderId],
+    );
+    expect(rows[0]?.expires_at.getTime()).toBeGreaterThan(Date.now() + 4 * 86_400_000);
+
+    // Un día después: ni el barrido ni la cancelación tocan el pedido.
+    await releaseExpired(pool, new Date(Date.now() + 86_400_000));
+    await cancelAbandonedOrders(pool);
+    expect(await statusOf()).toBe('pending_payment');
+
+    expect((await signedEvent('checkout.session.async_payment_succeeded', { ...session, payment_status: 'paid' })).statusCode).toBe(200);
+    expect(await statusOf()).toBe('paid');
+    expect(await stock()).toEqual({ on_hand: before?.on_hand ?? 0, reserved: 0 });
+  });
+
+  it('transferencia que no llega: el worker cancela y un pago tardío no reactiva el pedido', async () => {
+    const before = await stock();
+    const { session, statusOf } = await transferCheckout('tarde-transfer@example.com');
+    expect((await signedEvent('checkout.session.completed', { ...session, payment_status: 'unpaid' })).statusCode).toBe(200);
+
+    // Pasado el plazo de la reserva ampliada.
+    expect(await releaseExpired(pool, new Date(Date.now() + 6 * 86_400_000))).toBe(1);
+    expect(await cancelAbandonedOrders(pool)).toBe(1);
+    expect(await statusOf()).toBe('cancelled');
+    const restocked = { on_hand: (before?.on_hand ?? 0) + 1, reserved: 0 };
+    expect(await stock()).toEqual(restocked);
+
+    // El dinero llega tarde: se acepta el webhook, pero el pedido sigue cancelado y el stock intacto.
+    expect((await signedEvent('checkout.session.async_payment_succeeded', { ...session, payment_status: 'paid' })).statusCode).toBe(200);
+    expect(await statusOf()).toBe('cancelled');
+    expect(await stock()).toEqual(restocked);
   });
 });

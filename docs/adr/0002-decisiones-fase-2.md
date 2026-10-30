@@ -21,17 +21,21 @@ La clave del cliente protege `POST /checkout`. Hacia Stripe se usa una clave por
 ## 5. Dependencias: mínimo 14 días publicadas
 `stripe` se fija a `23.0.0` exacta (publicada el 2026-10-01). La `23.1.0` tenía 1 día. Regla para agentes: no instalar versiones publicadas hace menos de 14 días sin justificarlo en la PR.
 
-## Pagos diferidos y reserva (decisión abierta)
-Resueltos: `stripe_payment_intent_id` (issue #7), `checkout.session.async_payment_succeeded` (issue #8) e índice del outbox (issue #9).
+## 6. Pagos diferidos: reserva ampliada (decidido 2026-10-30, issue #14)
+Resueltos antes: `stripe_payment_intent_id` (issue #7), `checkout.session.async_payment_succeeded` (issue #8) e índice del outbox (issue #9).
 
-Riesgo no resuelto: una sesión `completed` con `unpaid` (transferencia, débito) deja la reserva activa solo hasta su caducidad (35 min como mínimo). El barrido libera toda reserva caducada sin mirar el estado del pedido. Si el dinero llega después, el pago entra con `PAID_WITHOUT_RESERVATION` y puede haber sobreventa.
+El propietario acepta tarjeta, Bizum y transferencia. Los métodos se activan en el panel de Stripe; el código no fija `payment_method_types`. La disponibilidad de Bizum en Stripe Checkout no está verificada.
 
-Opciones, a decidir por el propietario del producto:
-- (a) Restringir Checkout a tarjeta (`payment_method_types: ['card']`). Es la opción más segura y la que recomendamos hasta decidir lo demás.
-- (b) Ampliar la reserva mientras la sesión esté `unpaid`, con tope y reconciliación.
-- (c) Aceptar el riesgo y reconciliar a mano los `PAID_WITHOUT_RESERVATION`.
+Problema: una transferencia llega como `completed` con `unpaid` y el dinero puede tardar días, más que la reserva de checkout (35 min como mínimo). Sin cambios, el barrido liberaba el stock y el pago entraba sin reserva (sobreventa).
 
-`checkout.session.async_payment_failed` cancela el pedido y libera su reserva: una sesión ya `completed` no emite `expired`, así que sin esto el pedido quedaría pendiente para siempre.
+Decisión:
+- `completed` + `unpaid` amplía las reservas activas del pedido a 5 días (`DEFAULT_DELAYED_PAYMENT_RESERVATION_MS`); nunca las acorta.
+- `async_payment_succeeded` + `paid` confirma el pedido y descuenta stock.
+- `async_payment_failed` cancela el pedido y libera la reserva: una sesión ya `completed` no emite `expired`.
+- El worker, tras el barrido de reservas, cancela los pedidos `pending_payment` sin reservas activas (`cancelAbandonedOrders`).
+- Si el dinero llega con el pedido ya cancelado, no se reactiva (el stock pudo venderse): se registra `PAID_AFTER_CANCELLATION` para reembolso manual.
+
+Coste aceptado: el stock de un pedido por transferencia queda bloqueado hasta 5 días.
 
 ## Pendiente (otros)
 - Proveedor de email real, hosting e identidad (ADRs propios).

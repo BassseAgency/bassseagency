@@ -8,7 +8,7 @@ import { enqueueOutbox } from '../notifications/enqueue.js';
 import type { AppModule } from '../index.js';
 import type { CartLine, CartPort, InventoryPort } from '../ports.js';
 import type { CheckoutSession, PaymentProvider, WebhookEvent } from '../payments/provider.js';
-import { nextOrderStatus, type OrderStatus } from './status.js';
+import { isAwaitingDelayedPayment, isPaymentConfirmed, nextOrderStatus, type OrderStatus } from './status.js';
 
 export { nextOrderStatus, type OrderStatus } from './status.js';
 
@@ -24,11 +24,17 @@ export interface OrdersModuleDeps {
   reservationTtlMs: number;
   /** URL pública de la tienda, para success/cancel de Stripe. */
   appUrl: string;
+  /**
+   * Duración de la reserva mientras se espera un pago diferido (transferencia), contada desde
+   * el checkout.session.completed con payment_status unpaid. Si vence sin pago, el worker cancela el pedido.
+   */
+  delayedPaymentReservationMs: number;
 }
 
 const CHECKOUT_ROUTE = 'POST /checkout';
 const SESSION_EXPIRY_MARGIN_MS = 5 * 60_000;
 export const MIN_RESERVATION_TTL_MS = 30 * 60_000 + SESSION_EXPIRY_MARGIN_MS;
+export const DEFAULT_DELAYED_PAYMENT_RESERVATION_MS = 5 * 86_400_000;
 // Sin autenticación todavía: todas las claves comparten actor. Cambiar al añadir identidad (ADR 0002).
 const ANONYMOUS_ACTOR = 'anonymous';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -219,6 +225,23 @@ async function handleWebhook(
       );
     }
 
+    if (order.status === 'pending_payment' && isAwaitingDelayedPayment(event)) {
+      const extended = await deps.inventory.extend(
+        client,
+        order.id,
+        new Date(Date.now() + deps.delayedPaymentReservationMs),
+      );
+      req.log.info({ eventId: event.id, orderId: order.id, extended }, 'reservation extended for delayed payment');
+    }
+    if (order.status === 'cancelled' && isPaymentConfirmed(event)) {
+      // Dinero recibido tras cancelar (p. ej. transferencia fuera de plazo): el stock ya se liberó,
+      // así que no se reactiva el pedido. Requiere reembolso manual.
+      req.log.error(
+        { eventId: event.id, orderId: order.id, code: 'PAID_AFTER_CANCELLATION' },
+        'payment received for cancelled order',
+      );
+    }
+
     const next = nextOrderStatus(order.status, event);
     if (next === order.status) return { received: true };
 
@@ -256,6 +279,21 @@ async function handleWebhook(
     }
     return { received: true };
   });
+}
+
+/**
+ * Cancela pedidos pending_payment que ya no tienen reservas activas: el barrido liberó su stock
+ * (sesión caducada sin webhook, o pago diferido que no llegó a tiempo). Devuelve cuántos canceló.
+ * Una sola sentencia: si un webhook está pagando el pedido a la vez, su bloqueo hace que esta
+ * vuelva a evaluar el estado y lo salte.
+ */
+export async function cancelAbandonedOrders(pool: Pool): Promise<number> {
+  const { rowCount } = await pool.query(
+    `update orders o set status = 'cancelled', version = version + 1, updated_at = now()
+     where o.status = 'pending_payment'
+       and not exists (select 1 from stock_reservations r where r.order_id = o.id and r.status = 'active')`,
+  );
+  return rowCount ?? 0;
 }
 
 /** Pedido del evento: por metadata.order_id y, si falta, por payment_intent ya guardado. */

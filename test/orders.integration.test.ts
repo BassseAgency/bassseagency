@@ -24,7 +24,8 @@ class FakeCart implements CartPort {
 
 type InventoryCall =
   | { op: 'reserve'; orderId: string; items: ReservationItem[]; expiresAt: Date }
-  | { op: 'commit' | 'release'; orderId: string };
+  | { op: 'commit' | 'release'; orderId: string }
+  | { op: 'extend'; orderId: string; expiresAt: Date };
 
 class FakeInventory implements InventoryPort {
   readonly calls: InventoryCall[] = [];
@@ -41,6 +42,10 @@ class FakeInventory implements InventoryPort {
   release(_c: PoolClient, orderId: string): Promise<void> {
     this.calls.push({ op: 'release', orderId });
     return Promise.resolve();
+  }
+  extend(_c: PoolClient, orderId: string, expiresAt: Date): Promise<number> {
+    this.calls.push({ op: 'extend', orderId, expiresAt });
+    return Promise.resolve(1);
   }
   ops(orderId: string): string[] {
     return this.calls.filter((c) => c.orderId === orderId).map((c) => c.op);

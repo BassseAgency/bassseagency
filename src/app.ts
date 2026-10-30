@@ -4,7 +4,11 @@ import { registerErrorHandler } from './http/errors.js';
 import { cartPort } from './modules/cart/index.js';
 import { modules } from './modules/index.js';
 import { inventoryPort } from './modules/inventory/index.js';
-import { createOrdersModule, MIN_RESERVATION_TTL_MS } from './modules/orders/index.js';
+import {
+  createOrdersModule,
+  DEFAULT_DELAYED_PAYMENT_RESERVATION_MS,
+  MIN_RESERVATION_TTL_MS,
+} from './modules/orders/index.js';
 import type { PaymentProvider } from './modules/payments/provider.js';
 
 export interface AppDeps {
@@ -17,6 +21,7 @@ export interface AppDeps {
   /** URL pública de la tienda (success/cancel de Stripe). */
   appUrl?: string;
   reservationTtlMs?: number;
+  delayedPaymentReservationMs?: number;
 }
 
 const READY_TIMEOUT_MS = 2000;
@@ -44,6 +49,7 @@ export function buildApp(deps: AppDeps = {}): FastifyInstance {
         inventory: inventoryPort,
         reservationTtlMs: deps.reservationTtlMs ?? MIN_RESERVATION_TTL_MS,
         appUrl: deps.appUrl ?? 'http://localhost:3000',
+        delayedPaymentReservationMs: deps.delayedPaymentReservationMs ?? DEFAULT_DELAYED_PAYMENT_RESERVATION_MS,
       })(app, { db: deps.db });
     }
   }

@@ -86,7 +86,16 @@ async function release(client: PoolClient, orderId: string): Promise<void> {
   for (const r of await lockActive(client, orderId)) await releaseRow(client, orderId, r);
 }
 
-export const inventoryPort: InventoryPort = { reserve, commit, release };
+async function extend(client: PoolClient, orderId: string, expiresAt: Date): Promise<number> {
+  const { rowCount } = await client.query(
+    `update stock_reservations set expires_at = greatest(expires_at, $2)
+     where order_id = $1 and status = 'active'`,
+    [orderId, expiresAt],
+  );
+  return rowCount ?? 0;
+}
+
+export const inventoryPort: InventoryPort = { reserve, commit, release, extend };
 
 /**
  * Libera reservas activas caducadas (expires_at <= now). Cada reserva en su propia transacción;

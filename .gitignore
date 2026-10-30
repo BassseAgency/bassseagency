@@ -1,0 +1,18 @@
+# Secretos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependencias y builds
+node_modules/
+dist/
+build/
+.next/
+coverage/
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log

@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { z } from 'zod';
 import { releaseExpired } from './modules/inventory/index.js';
+import { cancelAbandonedOrders } from './modules/orders/index.js';
 import {
   LogEmailSender,
   ORDER_CONFIRMATION_TOPIC,
@@ -41,14 +42,16 @@ const logger: WorkerLogger = {
 
 const pool = new Pool({ connectionString: env.DATABASE_URL, connectionTimeoutMillis: 2000 });
 
-// Tareas periódicas. Las reservas caducadas se liberan aunque Stripe no envíe checkout.session.expired.
+// Tareas periódicas. Las reservas caducadas se liberan aunque Stripe no envíe checkout.session.expired,
+// y después se cancelan los pedidos pendientes que se han quedado sin reserva (pago diferido no llegado).
 const periodicTasks: PeriodicTask[] = [
   {
     name: 'release-expired-reservations',
     intervalMs: env.RESERVATION_SWEEP_MS,
     run: async (p) => {
       const released = await releaseExpired(p, new Date());
-      if (released > 0) logger.info({ released }, 'expired reservations released');
+      const cancelled = await cancelAbandonedOrders(p);
+      if (released > 0 || cancelled > 0) logger.info({ released, cancelled }, 'expired reservations released');
     },
   },
 ];

@@ -39,4 +39,9 @@ export interface InventoryPort {
   commit(client: PoolClient, orderId: string): Promise<number>;
   /** Libera reservas activas de un pedido (checkout caducado o cancelado). Idempotente. */
   release(client: PoolClient, orderId: string): Promise<void>;
+  /**
+   * Amplía la caducidad de las reservas activas del pedido (pago diferido pendiente).
+   * Nunca la acorta. Idempotente. Devuelve cuántas reservas activas tenía el pedido.
+   */
+  extend(client: PoolClient, orderId: string, expiresAt: Date): Promise<number>;
 }

@@ -34,7 +34,12 @@ export function nextOrderStatus(current: OrderStatus, event: OrderEvent): OrderS
   }
 }
 
-function isPaymentConfirmed(event: OrderEvent): boolean {
+/** Checkout completado con un método diferido (transferencia): el dinero aún no ha llegado. */
+export function isAwaitingDelayedPayment(event: OrderEvent): boolean {
+  return event.type === 'checkout.session.completed' && event.paymentStatus === 'unpaid';
+}
+
+export function isPaymentConfirmed(event: OrderEvent): boolean {
   if (event.paymentStatus !== 'paid') return false;
   return event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded';
 }

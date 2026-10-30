@@ -1,12 +1,8 @@
 # PROJECT_STATE
 
 ## Milestone actual
-**Fase 2 — flujo de compra**: construida y verificada, pendiente de merge humano.
-
-## Cadena de PRs (apiladas, merge en este orden)
-`main` ← #4 (`task/3-base-fase2`) ← #6 (`task/8-integracion-fase2`) ← #10 (`task/9-indice-outbox`, issue #9) ← #11 (`task/7-payment-intent-id`, issue #7) ← #12 (`task/8-async-payment`, issue #8)
-
-Los issues #7, #8 y #9 se cerrarán al mergear en `main` (GitHub solo cierra por `Closes` en la rama por defecto). Cada PR de la cadena toca áreas sensibles (migraciones, pagos): requieren confirmación humana.
+**Fase 2 — flujo de compra**: en `main` (PRs #4, #13, #10, #11 y #12, mergeadas el 2026-10-30).
+Pendiente de merge humano: reserva ampliada para pagos diferidos (issue #14).
 
 ## Hecho
 - **Fase 0:** repo público, `main` protegida (PR obligatoria, sin force push, sin borrado), ADR 0001, AGENTS.md, plantillas.
@@ -23,15 +19,15 @@ Los issues #7, #8 y #9 se cerrarán al mergear en `main` (GitHub solo cierra por
   - Tests: unit, integración contra Postgres 16 y end-to-end del flujo de compra (119 en la punta de la cadena).
   - Decisiones en ADR 0002.
 
-## Riesgo abierto (decisión humana)
-- **Pagos diferidos y reserva caducada:** un pago por transferencia que llega después de caducar la reserva entra sin stock reservado (`PAID_WITHOUT_RESERVATION`). Opciones y recomendación en ADR 0002. Recomendación: restringir Checkout a tarjeta hasta decidirlo.
+## Pagos diferidos (issue #14, ADR 0002 §6)
+- Tarjeta, Bizum y transferencia. La transferencia reserva stock 5 días; si no llega, el worker cancela el pedido. Un pago tardío se registra como `PAID_AFTER_CANCELLATION` para reembolso.
 
 ## Pendiente de decisiones humanas
 - Hosting de producción (afecta a preview y deploy).
 - Proveedor de identidad.
 - Proveedor de email transaccional.
 - Claves de Stripe en modo test (nunca en el repo) para probar contra Stripe real.
-- Política de métodos de pago (ver riesgo abierto).
+- Activar transferencia y Bizum en el panel de Stripe (comprobar que Bizum está disponible para la cuenta).
 
 ## Próximo
 - Fase 3: conciliación con Stripe, alertas, backups y runbooks.

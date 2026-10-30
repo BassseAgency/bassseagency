@@ -13,7 +13,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['test/**/*.ts', 'eslint.config.js'],
+    files: ['test/**/*.ts', 'eslint.config.js', 'vitest.config.ts'],
     ...tseslint.configs.disableTypeChecked,
   },
 );

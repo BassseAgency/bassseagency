@@ -1,5 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
+import { registerErrorHandler } from './http/errors.js';
+import { modules } from './modules/index.js';
 
 export interface AppDeps {
   /** Pool de Postgres. Si no se pasa, /health/ready reporta `database: "not_configured"`. */
@@ -21,6 +23,12 @@ export function buildApp(deps: AppDeps = {}): FastifyInstance {
     reply.header('x-request-id', req.id);
     done();
   });
+
+  registerErrorHandler(app);
+
+  if (deps.db) {
+    for (const register of modules) register(app, { db: deps.db });
+  }
 
   app.get('/health/live', () => ({ status: 'ok', release: deps.release ?? 'dev' }));
 

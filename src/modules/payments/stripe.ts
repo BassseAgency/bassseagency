@@ -26,12 +26,19 @@ export function stripeConfigFromEnv(env: NodeJS.ProcessEnv = process.env): Strip
   return { secretKey, webhookSecret };
 }
 
+/** id de un campo que Stripe devuelve como id o como objeto expandido. */
+function idOf(ref: string | { id: string } | null): string | null {
+  if (!ref) return null;
+  return typeof ref === 'string' ? ref : ref.id;
+}
+
 /** Normaliza un evento de Stripe al tipo de dominio. */
 export function toWebhookEvent(event: Stripe.Event): WebhookEvent {
   const base: WebhookEvent = {
     id: event.id,
     type: event.type,
     orderId: null,
+    paymentIntentId: null,
     paymentStatus: null,
     amountTotalCents: null,
     currency: null,
@@ -45,6 +52,7 @@ export function toWebhookEvent(event: Stripe.Event): WebhookEvent {
       return {
         ...base,
         orderId: s.metadata?.order_id ?? s.client_reference_id,
+        paymentIntentId: idOf(s.payment_intent),
         paymentStatus: s.payment_status,
         amountTotalCents: s.amount_total,
         currency: s.currency?.toUpperCase() ?? null,
@@ -52,11 +60,11 @@ export function toWebhookEvent(event: Stripe.Event): WebhookEvent {
     }
     case 'charge.refunded': {
       const c = event.data.object;
-      return { ...base, orderId: c.metadata.order_id ?? null };
+      return { ...base, orderId: c.metadata.order_id ?? null, paymentIntentId: idOf(c.payment_intent) };
     }
     case 'charge.dispute.created': {
       const d = event.data.object;
-      return { ...base, orderId: d.metadata.order_id ?? null };
+      return { ...base, orderId: d.metadata.order_id ?? null, paymentIntentId: idOf(d.payment_intent) };
     }
     default:
       return base;

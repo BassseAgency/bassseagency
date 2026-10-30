@@ -15,7 +15,9 @@ Lee primero `docs/adr/0001-arquitectura-agentes.md`. Es la decisión de arquitec
 2. Abre PR borrador enseguida con `Closes #<id>`.
 3. Commits pequeños, prefijo convencional: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`, `perf:`, `security:`.
 4. Antes de pedir revisión: lint, typecheck, tests y build en local.
-5. Un agente **nunca** aprueba ni mergea su propia PR.
+5. Merge solo con CI verde y la checklist de la plantilla de PR completa.
+   - Restricción actual: Claude y Codex comparten la cuenta `BassseAgency`, así que no hay aprobación de segunda persona. La revisión independiente la hace el otro agente en un comentario de PR, y el merge solo se hace con CI verde.
+   - Áreas sensibles (pagos, auth, permisos, migraciones, CI, deploy) necesitan confirmación humana antes del merge.
 
 ## Reglas no negociables
 - Nunca secretos en Git. `.env*` ignorado; solo `.env.example`.
@@ -27,11 +29,17 @@ Lee primero `docs/adr/0001-arquitectura-agentes.md`. Es la decisión de arquitec
 - Operaciones repetibles deben ser idempotentes (ver ADR 0001, §9).
 - No inventar precios, límites ni versiones: verificarlos en la fuente oficial.
 
-## Comandos (se completan en Fase 1)
-- Instalar: _pendiente_
-- Test: _pendiente_
-- Migrar: _pendiente_
-- Build: _pendiente_
+## Comandos
+- Instalar: `npm ci`
+- Postgres local: `docker compose up -d db` (crear `bassseagency_test` la primera vez)
+- Lint: `npm run lint`
+- Typecheck: `npm run typecheck`
+- Test: `TEST_DATABASE_URL=postgres://app:app@localhost:5432/bassseagency_test npm test`
+- Build: `npm run build`
+- Arrancar: `DATABASE_URL=postgres://app:app@localhost:5432/bassseagency npm run dev`
+- Migrar: `src/db/migrate.ts` (`migrate(pool, 'migrations')`); se ejecuta al arrancar cuando se añada la Fase 2.
+
+Los tests de integración usan `TEST_DATABASE_URL`, nunca `DATABASE_URL`, porque borran el esquema `public`.
 
 ## Estado
 - Estado de tareas: GitHub Issues + Project (no hay ficheros de tareas en el repo).

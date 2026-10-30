@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "start": "node dist/server.js",
+    "worker": "node dist/worker.js",
     "dev": "tsx watch src/server.ts"
   },
   "repository": {

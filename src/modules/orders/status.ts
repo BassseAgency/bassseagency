@@ -10,11 +10,15 @@ export interface OrderEvent {
 /**
  * Transición monotónica (ADR 0001 §9). Un evento que no aplica al estado actual
  * (antiguo, repetido o desconocido) deja el estado como está.
+ *
+ * Pago confirmado: `checkout.session.completed` con `paid` (tarjeta, síncrono) o
+ * `checkout.session.async_payment_succeeded` (métodos diferidos, p. ej. transferencia).
+ * Un método diferido llega primero como `completed` con `unpaid`: no paga todavía.
  */
 export function nextOrderStatus(current: OrderStatus, event: OrderEvent): OrderStatus {
   switch (current) {
     case 'pending_payment':
-      if (event.type === 'checkout.session.completed' && event.paymentStatus === 'paid') return 'paid';
+      if (isPaymentConfirmed(event)) return 'paid';
       if (event.type === 'checkout.session.expired') return 'cancelled';
       return current;
     case 'paid':
@@ -26,4 +30,9 @@ export function nextOrderStatus(current: OrderStatus, event: OrderEvent): OrderS
     case 'disputed':
       return current;
   }
+}
+
+function isPaymentConfirmed(event: OrderEvent): boolean {
+  if (event.paymentStatus !== 'paid') return false;
+  return event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded';
 }

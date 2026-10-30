@@ -43,6 +43,20 @@ describe.skipIf(!testDbUrl)('flujo de compra end-to-end', () => {
     await pool.end();
   });
 
+  /** Evento de Stripe firmado con el secreto de tests. */
+  function signedEvent(type: string, object: Record<string, unknown>) {
+    const payload = JSON.stringify({ id: `evt_${randomUUID()}`, object: 'event', type, data: { object } });
+    return app.inject({
+      method: 'POST',
+      url: '/webhooks/stripe',
+      payload,
+      headers: {
+        'content-type': 'application/json',
+        'stripe-signature': Stripe.webhooks.generateTestHeaderString({ payload, secret: WHSEC }),
+      },
+    });
+  }
+
   async function stock() {
     const { rows } = await pool.query<{ on_hand: number; reserved: number }>(
       'select on_hand, reserved from inventory where variant_id = $1',
@@ -166,20 +180,7 @@ describe.skipIf(!testDbUrl)('flujo de compra end-to-end', () => {
     const { orderId } = checkout.json() as { orderId: string };
     const paymentIntent = `pi_${randomUUID()}`;
 
-    const send = (type: string, object: Record<string, unknown>) => {
-      const payload = JSON.stringify({ id: `evt_${randomUUID()}`, object: 'event', type, data: { object } });
-      return app.inject({
-        method: 'POST',
-        url: '/webhooks/stripe',
-        payload,
-        headers: {
-          'content-type': 'application/json',
-          'stripe-signature': Stripe.webhooks.generateTestHeaderString({ payload, secret: WHSEC }),
-        },
-      });
-    };
-
-    const paid = await send('checkout.session.completed', {
+    const paid = await signedEvent('checkout.session.completed', {
       object: 'checkout.session',
       id: `cs_${orderId}`,
       client_reference_id: orderId,
@@ -192,7 +193,7 @@ describe.skipIf(!testDbUrl)('flujo de compra end-to-end', () => {
     expect(paid.statusCode).toBe(200);
 
     // El cargo llega sin metadata: solo el payment_intent identifica el pedido.
-    const refund = await send('charge.refunded', {
+    const refund = await signedEvent('charge.refunded', {
       object: 'charge',
       id: `ch_${randomUUID()}`,
       payment_intent: paymentIntent,
@@ -205,5 +206,41 @@ describe.skipIf(!testDbUrl)('flujo de compra end-to-end', () => {
       [orderId],
     );
     expect(rows[0]).toEqual({ status: 'refunded', stripe_payment_intent_id: paymentIntent });
+  });
+
+  it('pago diferido: pendiente hasta async_payment_succeeded y entonces descuenta stock', async () => {
+    // Restock explícito: los tests anteriores agotan la variante.
+    await pool.query('update inventory set on_hand = on_hand + 2 where variant_id = $1', [variantId]);
+    expect(await stock()).toEqual({ on_hand: 2, reserved: 0 });
+
+    const cartId = await addToNewCart(1);
+    const checkout = await app.inject({
+      method: 'POST',
+      url: '/checkout',
+      payload: { cartId, email: 'diferido@example.com' },
+      headers: { 'idempotency-key': randomUUID() },
+    });
+    const { orderId } = checkout.json() as { orderId: string };
+    const session = {
+      object: 'checkout.session',
+      id: `cs_${orderId}`,
+      client_reference_id: orderId,
+      metadata: { order_id: orderId },
+      amount_total: 2500,
+      currency: 'eur',
+      payment_intent: `pi_${randomUUID()}`,
+    };
+    const statusOf = async () =>
+      (await pool.query<{ status: string }>('select status from orders where id = $1', [orderId])).rows[0]?.status;
+
+    // Completed sin pago: el cliente aún no ha pagado. Stock reservado, pedido pendiente.
+    expect((await signedEvent('checkout.session.completed', { ...session, payment_status: 'unpaid' })).statusCode).toBe(200);
+    expect(await statusOf()).toBe('pending_payment');
+    expect(await stock()).toEqual({ on_hand: 2, reserved: 1 });
+
+    // El dinero llega días después: el pedido se paga y el stock se descuenta.
+    expect((await signedEvent('checkout.session.async_payment_succeeded', { ...session, payment_status: 'paid' })).statusCode).toBe(200);
+    expect(await statusOf()).toBe('paid');
+    expect(await stock()).toEqual({ on_hand: 1, reserved: 0 });
   });
 });

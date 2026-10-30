@@ -5,16 +5,17 @@ const completedPaid: OrderEvent = { type: 'checkout.session.completed', paymentS
 const completedUnpaid: OrderEvent = { type: 'checkout.session.completed', paymentStatus: 'unpaid' };
 const completedNoPayment: OrderEvent = { type: 'checkout.session.completed', paymentStatus: 'no_payment_required' };
 const asyncSucceeded: OrderEvent = { type: 'checkout.session.async_payment_succeeded', paymentStatus: 'paid' };
+const asyncFailed: OrderEvent = { type: 'checkout.session.async_payment_failed', paymentStatus: 'unpaid' };
 const expired: OrderEvent = { type: 'checkout.session.expired' };
 const refunded: OrderEvent = { type: 'charge.refunded' };
 const disputed: OrderEvent = { type: 'charge.dispute.created' };
 const unknown: OrderEvent = { type: 'customer.created' };
 
-const events = { completedPaid, completedUnpaid, completedNoPayment, asyncSucceeded, expired, refunded, disputed, unknown };
+const events = { completedPaid, completedUnpaid, completedNoPayment, asyncSucceeded, asyncFailed, expired, refunded, disputed, unknown };
 
 // Tabla completa estado × evento. Todo lo no listado aquí debe dejar el estado igual.
 const allowed: Partial<Record<OrderStatus, Partial<Record<keyof typeof events, OrderStatus>>>> = {
-  pending_payment: { completedPaid: 'paid', asyncSucceeded: 'paid', expired: 'cancelled' },
+  pending_payment: { completedPaid: 'paid', asyncSucceeded: 'paid', asyncFailed: 'cancelled', expired: 'cancelled' },
   paid: { refunded: 'refunded', disputed: 'disputed' },
 };
 

@@ -31,7 +31,7 @@ Opciones, a decidir por el propietario del producto:
 - (b) Ampliar la reserva mientras la sesión esté `unpaid`, con tope y reconciliación.
 - (c) Aceptar el riesgo y reconciliar a mano los `PAID_WITHOUT_RESERVATION`.
 
-`checkout.session.async_payment_failed` no cambia el estado: el pedido se cancela cuando caduca la sesión.
+`checkout.session.async_payment_failed` cancela el pedido y libera su reserva: una sesión ya `completed` no emite `expired`, así que sin esto el pedido quedaría pendiente para siempre.
 
 ## Pendiente (otros)
 - Proveedor de email real, hosting e identidad (ADRs propios).

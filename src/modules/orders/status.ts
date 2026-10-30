@@ -20,6 +20,8 @@ export function nextOrderStatus(current: OrderStatus, event: OrderEvent): OrderS
     case 'pending_payment':
       if (isPaymentConfirmed(event)) return 'paid';
       if (event.type === 'checkout.session.expired') return 'cancelled';
+      // Una sesión ya completed no caduca: el fallo del pago diferido es la única señal de cierre.
+      if (event.type === 'checkout.session.async_payment_failed') return 'cancelled';
       return current;
     case 'paid':
       if (event.type === 'charge.refunded') return 'refunded';

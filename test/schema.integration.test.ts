@@ -50,3 +50,22 @@ describe.skipIf(!testDbUrl)('esquema 0002: invariantes en base de datos', () => 
     ).rejects.toThrow(/check/i);
   });
 });
+
+describe.skipIf(!testDbUrl)('migración 0003: índice de reclamo del outbox', () => {
+  let pool: Pool;
+
+  beforeAll(async () => {
+    pool = await freshDb();
+  });
+  afterAll(async () => {
+    await pool.end();
+  });
+
+  it('existe un índice parcial sobre pendientes que incluye locked_until', async () => {
+    const { rows } = await pool.query<{ indexdef: string }>(
+      `select indexdef from pg_indexes where tablename = 'outbox' and indexname = 'outbox_claim_idx'`,
+    );
+    expect(rows[0]?.indexdef).toMatch(/locked_until/);
+    expect(rows[0]?.indexdef).toMatch(/WHERE \(status = 'pending'::text\)/);
+  });
+});

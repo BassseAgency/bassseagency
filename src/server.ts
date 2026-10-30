@@ -12,8 +12,21 @@ const db = process.env.DATABASE_URL
   : undefined;
 
 // Migraciones al arrancar: el advisory lock del runner evita que dos instancias migren a la vez.
+// El lock es de sesión, así que se usa la conexión directa (DATABASE_URL_UNPOOLED) si existe:
+// detrás de un pooler en modo transacción la sesión no está garantizada (Neon).
 if (db && process.env.MIGRATE_ON_START === 'true') {
-  await migrate(db, join(import.meta.dirname, '..', 'migrations'));
+  const migrationsDir = join(import.meta.dirname, '..', 'migrations');
+  const directUrl = process.env.DATABASE_URL_UNPOOLED;
+  if (directUrl) {
+    const direct = new Pool({ connectionString: directUrl, connectionTimeoutMillis: 5000, max: 1 });
+    try {
+      await migrate(direct, migrationsDir);
+    } finally {
+      await direct.end();
+    }
+  } else {
+    await migrate(db, migrationsDir);
+  }
 }
 
 // Sin claves de Stripe la tienda arranca sin checkout (catálogo y carrito siguen disponibles).

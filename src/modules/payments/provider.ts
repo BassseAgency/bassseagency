@@ -16,6 +16,8 @@ export interface CreateCheckoutSessionInput {
   idempotencyKey: string;
   successUrl: string;
   cancelUrl: string;
+  /** Caducidad de la sesión. Debe ser anterior a la de la reserva de stock (si no, se puede pagar sin stock). */
+  expiresAt: Date;
 }
 
 export interface CheckoutSession {

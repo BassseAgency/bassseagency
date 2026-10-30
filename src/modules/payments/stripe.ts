@@ -104,6 +104,7 @@ export class StripePaymentProvider implements PaymentProvider {
         })),
         success_url: input.successUrl,
         cancel_url: input.cancelUrl,
+        expires_at: Math.floor(input.expiresAt.getTime() / 1000),
       },
       { idempotencyKey: input.idempotencyKey },
     );

@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { z } from 'zod';
+import { releaseExpired } from './modules/inventory/index.js';
 import {
   LogEmailSender,
   ORDER_CONFIRMATION_TOPIC,
@@ -16,6 +17,7 @@ const env = z
     OUTBOX_LOCK_MS: z.coerce.number().int().positive().default(60_000),
     OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().positive().default(10),
     OUTBOX_HANDLER_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+    RESERVATION_SWEEP_MS: z.coerce.number().int().positive().default(60_000),
   })
   .refine((e) => e.OUTBOX_LOCK_MS > e.OUTBOX_HANDLER_TIMEOUT_MS, {
     message: 'OUTBOX_LOCK_MS debe ser mayor que OUTBOX_HANDLER_TIMEOUT_MS',
@@ -39,8 +41,17 @@ const logger: WorkerLogger = {
 
 const pool = new Pool({ connectionString: env.DATABASE_URL, connectionTimeoutMillis: 2000 });
 
-// Registro de tareas periódicas (vacío por ahora; p. ej. liberar reservas caducadas).
-const periodicTasks: PeriodicTask[] = [];
+// Tareas periódicas. Las reservas caducadas se liberan aunque Stripe no envíe checkout.session.expired.
+const periodicTasks: PeriodicTask[] = [
+  {
+    name: 'release-expired-reservations',
+    intervalMs: env.RESERVATION_SWEEP_MS,
+    run: async (p) => {
+      const released = await releaseExpired(p, new Date());
+      if (released > 0) logger.info({ released }, 'expired reservations released');
+    },
+  },
+];
 
 const loop = startWorkerLoop({
   pool,

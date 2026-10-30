@@ -1,13 +1,22 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { registerErrorHandler } from './http/errors.js';
+import { cartPort } from './modules/cart/index.js';
 import { modules } from './modules/index.js';
+import { inventoryPort } from './modules/inventory/index.js';
+import { createOrdersModule, MIN_RESERVATION_TTL_MS } from './modules/orders/index.js';
+import type { PaymentProvider } from './modules/payments/provider.js';
 
 export interface AppDeps {
   /** Pool de Postgres. Si no se pasa, /health/ready reporta `database: "not_configured"`. */
   db?: Pool;
   /** Versión de release (SHA del commit), para trazabilidad en logs y health. */
   release?: string;
+  /** Proveedor de pagos. Sin él no se registran /checkout ni el webhook. */
+  payments?: PaymentProvider;
+  /** URL pública de la tienda (success/cancel de Stripe). */
+  appUrl?: string;
+  reservationTtlMs?: number;
 }
 
 const READY_TIMEOUT_MS = 2000;
@@ -28,6 +37,15 @@ export function buildApp(deps: AppDeps = {}): FastifyInstance {
 
   if (deps.db) {
     for (const register of modules) register(app, { db: deps.db });
+    if (deps.payments) {
+      createOrdersModule({
+        payments: deps.payments,
+        cart: cartPort,
+        inventory: inventoryPort,
+        reservationTtlMs: deps.reservationTtlMs ?? MIN_RESERVATION_TTL_MS,
+        appUrl: deps.appUrl ?? 'http://localhost:3000',
+      })(app, { db: deps.db });
+    }
   }
 
   app.get('/health/live', () => ({ status: 'ok', release: deps.release ?? 'dev' }));

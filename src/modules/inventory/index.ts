@@ -55,8 +55,9 @@ async function lockActive(client: PoolClient, orderId: string): Promise<Reservat
   return rows;
 }
 
-async function commit(client: PoolClient, orderId: string): Promise<void> {
-  for (const r of await lockActive(client, orderId)) {
+async function commit(client: PoolClient, orderId: string): Promise<number> {
+  const active = await lockActive(client, orderId);
+  for (const r of active) {
     await client.query(
       `update inventory set on_hand = on_hand - $2, reserved = reserved - $2, updated_at = now()
        where variant_id = $1`,
@@ -67,6 +68,7 @@ async function commit(client: PoolClient, orderId: string): Promise<void> {
       [orderId, r.variant_id],
     );
   }
+  return active.length;
 }
 
 async function releaseRow(client: PoolClient, orderId: string, r: ReservationRow): Promise<void> {

@@ -28,6 +28,7 @@ Lee primero `docs/adr/0001-arquitectura-agentes.md`. Es la decisión de arquitec
 - Toda llamada externa lleva timeout explícito.
 - Operaciones repetibles deben ser idempotentes (ver ADR 0001, §9).
 - No inventar precios, límites ni versiones: verificarlos en la fuente oficial.
+- Dependencias nuevas: versión exacta publicada hace al menos 14 días (ADR 0002 §5).
 
 ## Comandos
 - Instalar: `npm ci`
@@ -36,8 +37,10 @@ Lee primero `docs/adr/0001-arquitectura-agentes.md`. Es la decisión de arquitec
 - Typecheck: `npm run typecheck`
 - Test: `TEST_DATABASE_URL=postgres://app:app@localhost:5432/bassseagency_test npm test`
 - Build: `npm run build`
-- Arrancar: `DATABASE_URL=postgres://app:app@localhost:5432/bassseagency npm run dev`
-- Migrar: `src/db/migrate.ts` (`migrate(pool, 'migrations')`); se ejecuta al arrancar cuando se añada la Fase 2.
+- Arrancar API: `DATABASE_URL=postgres://app:app@localhost:5432/bassseagency MIGRATE_ON_START=true npm run dev`
+  (sin `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` arranca sin checkout)
+- Arrancar worker: `npm run build && DATABASE_URL=... npm run worker`
+- Migrar: `MIGRATE_ON_START=true` al arrancar la API (advisory lock: seguro con varias instancias).
 
 Los tests de integración usan `TEST_DATABASE_URL`, nunca `DATABASE_URL`, porque borran el esquema `public`.
 

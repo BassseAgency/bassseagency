@@ -16,13 +16,19 @@ export interface OrdersModuleDeps {
   payments: PaymentProvider;
   cart: CartPort;
   inventory: InventoryPort;
-  /** Duración de la reserva de stock durante el checkout. */
+  /**
+   * Duración de la reserva de stock durante el checkout. La sesión de Stripe caduca
+   * SESSION_EXPIRY_MARGIN_MS antes, para que nunca se pueda pagar con la reserva ya liberada.
+   * Stripe exige al menos 30 min de vida de sesión, así que el mínimo es MIN_RESERVATION_TTL_MS.
+   */
   reservationTtlMs: number;
   /** URL pública de la tienda, para success/cancel de Stripe. */
   appUrl: string;
 }
 
 const CHECKOUT_ROUTE = 'POST /checkout';
+const SESSION_EXPIRY_MARGIN_MS = 5 * 60_000;
+export const MIN_RESERVATION_TTL_MS = 30 * 60_000 + SESSION_EXPIRY_MARGIN_MS;
 // Sin autenticación todavía: todas las claves comparten actor. Cambiar al añadir identidad (ADR 0002).
 const ANONYMOUS_ACTOR = 'anonymous';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -44,6 +50,9 @@ interface CreatedOrder {
 }
 
 export function createOrdersModule(deps: OrdersModuleDeps): AppModule {
+  if (deps.reservationTtlMs < MIN_RESERVATION_TTL_MS) {
+    throw new Error(`reservationTtlMs debe ser >= ${String(MIN_RESERVATION_TTL_MS)} ms`);
+  }
   return (app, { db }) => {
     app.post('/checkout', async (req, reply) => {
       const key = readIdempotencyKey(req);
@@ -51,7 +60,7 @@ export function createOrdersModule(deps: OrdersModuleDeps): AppModule {
       const result = await runIdempotent<CheckoutResponse>(
         db,
         { actor: ANONYMOUS_ACTOR, route: CHECKOUT_ROUTE, key, requestHash: hashRequest(body) },
-        async () => ({ status: 201, body: await checkout(db, deps, req, body, key) }),
+        async () => ({ status: 201, body: await checkout(db, deps, req, body) }),
       );
       return reply.code(result.status).send(result.body);
     });
@@ -89,8 +98,8 @@ async function checkout(
   deps: OrdersModuleDeps,
   req: FastifyRequest,
   body: z.infer<typeof checkoutBody>,
-  idempotencyKey: string,
 ): Promise<CheckoutResponse> {
+  const reservationExpiresAt = new Date(Date.now() + deps.reservationTtlMs);
   // 1) Pedido + snapshot + reserva en una transacción.
   const order = await withTransaction(db, async (client): Promise<CreatedOrder> => {
     const lines = await deps.cart.getCartLines(client, body.cartId);
@@ -118,7 +127,7 @@ async function checkout(
       client,
       id,
       lines.map((l) => ({ variantId: l.variantId, quantity: l.quantity })),
-      new Date(Date.now() + deps.reservationTtlMs),
+      reservationExpiresAt,
     );
     return { id, currency, lines };
   });
@@ -131,7 +140,11 @@ async function checkout(
       email: body.email,
       currency: order.currency,
       lines: order.lines.map((l) => ({ name: l.name, unitPriceCents: l.unitPriceCents, quantity: l.quantity })),
-      idempotencyKey,
+      // Clave por pedido, no la del cliente: si Stripe falla, el pedido se cancela y un reintento
+      // crea un pedido nuevo con otros parámetros; reutilizar la clave del cliente haría que Stripe
+      // la rechazara durante 24 h. Los reintentos de red del SDK sí comparten esta clave.
+      idempotencyKey: `checkout:${order.id}`,
+      expiresAt: new Date(reservationExpiresAt.getTime() - SESSION_EXPIRY_MARGIN_MS),
       successUrl: `${deps.appUrl}/checkout/success?order_id=${order.id}`,
       cancelUrl: `${deps.appUrl}/checkout/cancel?order_id=${order.id}`,
     });
@@ -211,7 +224,12 @@ async function handleWebhook(
     );
 
     if (next === 'paid') {
-      await deps.inventory.commit(client, order.id);
+      const committed = await deps.inventory.commit(client, order.id);
+      if (committed === 0) {
+        // Cobrado sin reserva activa (no debería pasar si la sesión caduca antes que la reserva).
+        // Se acepta el pago y se señala para conciliación: puede requerir reembolso por falta de stock.
+        req.log.error({ eventId: event.id, orderId: order.id, code: 'PAID_WITHOUT_RESERVATION' }, 'paid without reservation');
+      }
       await enqueueOutbox(client, {
         topic: 'email.order_confirmation',
         dedupeKey: `order:${order.id}:confirmation`,

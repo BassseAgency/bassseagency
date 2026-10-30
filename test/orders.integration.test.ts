@@ -5,7 +5,7 @@ import Stripe from 'stripe';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppError, registerErrorHandler } from '../src/http/errors.js';
 import { hashRequest } from '../src/http/idempotency.js';
-import { createOrdersModule } from '../src/modules/orders/index.js';
+import { createOrdersModule, MIN_RESERVATION_TTL_MS } from '../src/modules/orders/index.js';
 import { FakePaymentProvider } from '../src/modules/payments/fake.js';
 import type { CartLine, CartPort, InventoryPort, ReservationItem } from '../src/modules/ports.js';
 import { freshDb, seedVariant, testDbUrl } from './helpers/db.js';
@@ -32,9 +32,11 @@ class FakeInventory implements InventoryPort {
     this.calls.push({ op: 'reserve', orderId, items, expiresAt });
     return Promise.resolve();
   }
-  commit(_c: PoolClient, orderId: string): Promise<void> {
+  /** Líneas que devuelve commit; 0 simula pago con la reserva ya liberada. */
+  committedLines = 1;
+  commit(_c: PoolClient, orderId: string): Promise<number> {
     this.calls.push({ op: 'commit', orderId });
-    return Promise.resolve();
+    return Promise.resolve(this.committedLines);
   }
   release(_c: PoolClient, orderId: string): Promise<void> {
     this.calls.push({ op: 'release', orderId });
@@ -65,7 +67,7 @@ describe.skipIf(!testDbUrl)('pedidos: checkout y webhook de Stripe', () => {
     await app?.close();
     app = Fastify({ logger: false });
     registerErrorHandler(app);
-    createOrdersModule({ payments, cart, inventory, reservationTtlMs: 15 * 60_000, appUrl: 'http://localhost:3000' })(
+    createOrdersModule({ payments, cart, inventory, reservationTtlMs: MIN_RESERVATION_TTL_MS, appUrl: 'http://localhost:3000' })(
       app,
       { db: pool },
     );
@@ -150,6 +152,26 @@ describe.skipIf(!testDbUrl)('pedidos: checkout y webhook de Stripe', () => {
   }
 
   describe('POST /checkout', () => {
+    it('rechaza una TTL de reserva menor que la vida mínima de la sesión de Stripe', () => {
+      expect(() =>
+        createOrdersModule({ payments, cart, inventory, reservationTtlMs: 15 * 60_000, appUrl: 'http://x' }),
+      ).toThrow(/reservationTtlMs/);
+    });
+
+    it('la sesión de Stripe caduca antes que la reserva y usa una clave por pedido', async () => {
+      const clientKey = randomUUID();
+      const res = await postCheckout({ cartId: newCart(), email: 'a@example.com' }, clientKey);
+      const { orderId } = res.json() as { orderId: string };
+      const call = payments.calls.at(-1);
+      const reserve = inventory.calls.find((c) => c.op === 'reserve' && c.orderId === orderId);
+      expect(call?.idempotencyKey).toBe(`checkout:${orderId}`);
+      expect(call?.idempotencyKey).not.toContain(clientKey);
+      if (reserve?.op !== 'reserve' || !call) throw new Error('faltan llamadas');
+      expect(call.expiresAt.getTime()).toBeLessThan(reserve.expiresAt.getTime());
+      // Stripe exige al menos 30 min de vida de sesión.
+      expect(call.expiresAt.getTime()).toBeGreaterThanOrEqual(Date.now() + 29 * 60_000);
+    });
+
     it('falta Idempotency-Key → 400 y no crea pedido', async () => {
       const before = await pool.query('select count(*) from orders');
       const res = await postCheckout({ cartId: newCart(), email: 'a@example.com' });
@@ -176,10 +198,15 @@ describe.skipIf(!testDbUrl)('pedidos: checkout y webhook de Stripe', () => {
 
       const reserve = inventory.calls.find((c) => c.op === 'reserve');
       expect(reserve).toMatchObject({ orderId, items: [{ variantId, quantity: 2 }] });
-      if (reserve?.op === 'reserve') expect(reserve.expiresAt.getTime()).toBeGreaterThan(Date.now() + 14 * 60_000);
+      if (reserve?.op === 'reserve') expect(reserve.expiresAt.getTime()).toBeGreaterThan(Date.now() + 34 * 60_000);
 
       expect(payments.calls).toHaveLength(1);
-      expect(payments.calls[0]).toMatchObject({ orderId, idempotencyKey: key, currency: 'EUR', email: 'a@example.com' });
+      expect(payments.calls[0]).toMatchObject({
+        orderId,
+        idempotencyKey: `checkout:${orderId}`,
+        currency: 'EUR',
+        email: 'a@example.com',
+      });
     });
 
     it('misma clave dos veces → un solo pedido y la misma respuesta', async () => {

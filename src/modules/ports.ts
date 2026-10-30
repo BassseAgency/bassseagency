@@ -32,8 +32,11 @@ export interface InventoryPort {
    * Idempotente por (orderId, variantId). Lanza AppError CONFLICT (OUT_OF_STOCK) si falta stock.
    */
   reserve(client: PoolClient, orderId: string, items: ReservationItem[], expiresAt: Date): Promise<void>;
-  /** Convierte reservas activas en salida de stock (pago confirmado). Idempotente. */
-  commit(client: PoolClient, orderId: string): Promise<void>;
+  /**
+   * Convierte reservas activas en salida de stock (pago confirmado). Idempotente.
+   * Devuelve cuántas líneas confirmó: 0 si no había reservas activas.
+   */
+  commit(client: PoolClient, orderId: string): Promise<number>;
   /** Libera reservas activas de un pedido (checkout caducado o cancelado). Idempotente. */
   release(client: PoolClient, orderId: string): Promise<void>;
 }

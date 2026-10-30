@@ -22,9 +22,25 @@ function normalize(items: ReservationItem[]): ReservationItem[] {
     .map(([variantId, quantity]) => ({ variantId, quantity }));
 }
 
+/**
+ * Libera las reservas caducadas de una variante antes de reservarla: el stock disponible no depende
+ * de cada cuánto pase el barrido. `skip locked`: una reserva que otro proceso está confirmando no se toca.
+ */
+async function releaseExpiredForVariant(client: PoolClient, variantId: string): Promise<void> {
+  const { rows } = await client.query<ReservationRow & { order_id: string }>(
+    `select order_id, variant_id, quantity from stock_reservations
+     where variant_id = $1 and status = 'active' and expires_at <= now()
+     order by order_id
+     for update skip locked`,
+    [variantId],
+  );
+  for (const r of rows) await releaseRow(client, r.order_id, r);
+}
+
 async function reserve(client: PoolClient, orderId: string, items: ReservationItem[], expiresAt: Date): Promise<void> {
   // Todo-o-nada: si una línea falla se lanza y el llamante hace rollback de toda la transacción.
   for (const { variantId, quantity } of normalize(items)) {
+    await releaseExpiredForVariant(client, variantId);
     const inserted = await client.query(
       `insert into stock_reservations (order_id, variant_id, quantity, expires_at) values ($1, $2, $3, $4)
        on conflict (order_id, variant_id) do nothing`,

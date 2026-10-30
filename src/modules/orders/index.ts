@@ -29,6 +29,8 @@ export interface OrdersModuleDeps {
    * el checkout.session.completed con payment_status unpaid. Si vence sin pago, el worker cancela el pedido.
    */
   delayedPaymentReservationMs: number;
+  /** Se llama tras confirmar (commit) un pedido pagado. Sirve para enviar el email sin esperar al worker. */
+  onOrderPaid?: () => void;
 }
 
 const CHECKOUT_ROUTE = 'POST /checkout';
@@ -82,7 +84,10 @@ export function createOrdersModule(deps: OrdersModuleDeps): AppModule {
           throw new AppError('VALIDATION', 'INVALID_SIGNATURE', 'Firma de webhook inválida');
         }
         const event = deps.payments.verifyWebhook(req.body, signature);
-        const result = await handleWebhook(db, deps, req, event);
+        const outcome = { paid: false };
+        const result = await handleWebhook(db, deps, req, event, outcome);
+        // Después del commit: el outbox ya ve el mensaje de confirmación.
+        if (outcome.paid) deps.onOrderPaid?.();
         return reply.code(200).send(result);
       });
       done();
@@ -190,6 +195,7 @@ async function handleWebhook(
   deps: OrdersModuleDeps,
   req: FastifyRequest,
   event: WebhookEvent,
+  outcome: { paid: boolean },
 ): Promise<{ received: true; duplicate?: true }> {
   return withTransaction(db, async (client) => {
     // Dedupe en la misma transacción que el efecto: si algo falla, rollback y Stripe reintenta.
@@ -263,6 +269,7 @@ async function handleWebhook(
     );
 
     if (next === 'paid') {
+      outcome.paid = true;
       const committed = await deps.inventory.commit(client, order.id);
       if (committed === 0) {
         // Cobrado sin reserva activa (no debería pasar si la sesión caduca antes que la reserva).

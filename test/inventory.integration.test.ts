@@ -141,10 +141,11 @@ describe.skipIf(!testDbUrl)('inventario', () => {
     const committed = await newOrder();
     const past = new Date(now.getTime() - 60_000);
     const later = new Date(now.getTime() + 60_000);
-    await withTransaction(pool, (c) => inventoryPort.reserve(c, expired, [{ variantId: v, quantity: 2 }], past));
+    // La caducada se reserva la última: reservar la variante libera antes sus reservas caducadas.
     await withTransaction(pool, (c) => inventoryPort.reserve(c, alive, [{ variantId: v, quantity: 3 }], later));
     await withTransaction(pool, (c) => inventoryPort.reserve(c, committed, [{ variantId: v, quantity: 1 }], past));
     await withTransaction(pool, (c) => inventoryPort.commit(c, committed));
+    await withTransaction(pool, (c) => inventoryPort.reserve(c, expired, [{ variantId: v, quantity: 2 }], past));
     expect(await stock(v)).toEqual({ on_hand: 9, reserved: 5 });
 
     expect(await releaseExpired(pool, now)).toBe(1);
@@ -152,5 +153,19 @@ describe.skipIf(!testDbUrl)('inventario', () => {
     expect(await stock(v)).toEqual({ on_hand: 9, reserved: 3 });
     expect(await reservationStatuses(expired)).toEqual(['released']);
     expect(await reservationStatuses(alive)).toEqual(['active']);
+  });
+
+  it('al reservar libera antes las reservas caducadas de la misma variante', async () => {
+    const variantId = await seedVariant(pool, { sku: 'SKU-LAZY', onHand: 1 });
+    const stale = await newOrder();
+    await withTransaction(pool, (c) =>
+      inventoryPort.reserve(c, stale, [{ variantId, quantity: 1 }], new Date(Date.now() - 1000)),
+    );
+    const fresh = await newOrder();
+    await withTransaction(pool, (c) => inventoryPort.reserve(c, fresh, [{ variantId, quantity: 1 }], FUTURE));
+
+    expect(await reservationStatuses(stale)).toEqual(['released']);
+    expect(await reservationStatuses(fresh)).toEqual(['active']);
+    expect(await stock(variantId)).toEqual({ on_hand: 1, reserved: 1 });
   });
 });

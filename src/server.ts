@@ -40,6 +40,7 @@ const app = buildApp({
   release: process.env.RELEASE_SHA,
   payments,
   appUrl: process.env.APP_URL,
+  cronSecret: process.env.CRON_SECRET,
   reservationTtlMs: process.env.RESERVATION_TTL_MS ? Number(process.env.RESERVATION_TTL_MS) : undefined,
 });
 if (!payments) app.log.warn('STRIPE_SECRET_KEY/STRIPE_WEBHOOK_SECRET no definidas: checkout desactivado');

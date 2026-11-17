@@ -85,9 +85,9 @@ export async function setCartItem(db: Pool, cartId: string, variantId: string, q
     if (quantity === 0) {
       await client.query('delete from cart_items where cart_id = $1 and variant_id = $2', [cartId, variantId]);
     } else {
-      const { rowCount } = await client.query('select 1 from product_variants v
+      const { rowCount } = await client.query(`select 1 from product_variants v
           join products p on p.id = v.product_id
-          where v.id = $1 and p.status = 'active'', [variantId]);
+          where v.id = $1 and p.status = 'active'`, [variantId]);
       if (rowCount === 0) throw new AppError('NOT_FOUND', 'VARIANT_NOT_FOUND', 'Variante no encontrada');
       await client.query(
         `insert into cart_items (cart_id, variant_id, quantity) values ($1, $2, $3)

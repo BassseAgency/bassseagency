@@ -1,0 +1,704 @@
+{
+  "schema_version": 1,
+  "title": "BASSSE Merch · Catálogo 2026",
+  "reference": "BASSSE Merch · Catálogo.pdf (20 páginas), cotizaciones de octubre de 2026",
+  "currency": "EUR",
+  "status": "draft",
+  "not_for_live_checkout": true,
+  "tax_warning": "IVA 21% sólo como referencia del PDF. No sustituye determinación fiscal por destino ni portes, y algunos importes tienen redondeos del catálogo.",
+  "lot_warning": "Valores net_lot_cents/gross_lot_cents corresponden al LOTE COMPLETO, no multiplicar precios unitarios redondeados.",
+  "products": [
+    {
+      "slug": "camisetas-oversize",
+      "name": "Camisetas oversize",
+      "source_page": 4,
+      "price_kind": "cerrada",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-CAMISETAS-OVERSIZE-01",
+          "name": "220 g · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 114925,
+          "gross_lot_cents": 139059,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-CAMISETAS-OVERSIZE-02",
+          "name": "220 g · 200 uds",
+          "lot_units": 200,
+          "net_lot_cents": 220440,
+          "gross_lot_cents": 266733,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-CAMISETAS-OVERSIZE-03",
+          "name": "240 g · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 127694,
+          "gross_lot_cents": 154510,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-CAMISETAS-OVERSIZE-04",
+          "name": "240 g · 200 uds",
+          "lot_units": 200,
+          "net_lot_cents": 245979,
+          "gross_lot_cents": 297635,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "sudaderas-capucha",
+      "name": "Sudaderas con capucha",
+      "source_page": 5,
+      "price_kind": "cerrada",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-SUDADERAS-CAPUCHA-01",
+          "name": "350 g · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 219769,
+          "gross_lot_cents": 265920,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-SUDADERAS-CAPUCHA-02",
+          "name": "350 g · 200 uds",
+          "lot_units": 200,
+          "net_lot_cents": 419487,
+          "gross_lot_cents": 507579,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-SUDADERAS-CAPUCHA-03",
+          "name": "400 g · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 259981,
+          "gross_lot_cents": 314577,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-SUDADERAS-CAPUCHA-04",
+          "name": "400 g · 200 uds",
+          "lot_units": 200,
+          "net_lot_cents": 500561,
+          "gross_lot_cents": 605679,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "gorras-y-gorros",
+      "name": "Gorras y gorros pescador",
+      "source_page": 6,
+      "price_kind": "cerrada",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-GORRAS-Y-GORROS-01",
+          "name": "Gorra 6 paneles · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 75830,
+          "gross_lot_cents": 91754,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-GORRAS-Y-GORROS-02",
+          "name": "Gorra 6 paneles · 200 uds",
+          "lot_units": 200,
+          "net_lot_cents": 133993,
+          "gross_lot_cents": 162131,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-GORRAS-Y-GORROS-03",
+          "name": "Gorro pescador · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 75796,
+          "gross_lot_cents": 91713,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-GORRAS-Y-GORROS-04",
+          "name": "Gorro pescador · 200 uds",
+          "lot_units": 200,
+          "net_lot_cents": 133829,
+          "gross_lot_cents": 161933,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "lanyards",
+      "name": "Lanyards 90 × 2,5 cm",
+      "source_page": 9,
+      "price_kind": "cerrada",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-LANYARDS-01",
+          "name": "Transfer · mosq. gris · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 14876,
+          "gross_lot_cents": 18000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LANYARDS-02",
+          "name": "Transfer · mosq. negro · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 16116,
+          "gross_lot_cents": 19500,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LANYARDS-03",
+          "name": "Transfer · negro + cierre · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 19008,
+          "gross_lot_cents": 23000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LANYARDS-04",
+          "name": "Jacquard · mosq. gris · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 24793,
+          "gross_lot_cents": 30000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LANYARDS-05",
+          "name": "Jacquard · mosq. negro · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 26446,
+          "gross_lot_cents": 32000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LANYARDS-06",
+          "name": "Jacquard · negro + cierre · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 28099,
+          "gross_lot_cents": 34000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LANYARDS-07",
+          "name": "Sublimado · cierre · 200 uds",
+          "lot_units": 200,
+          "net_lot_cents": 32089,
+          "gross_lot_cents": 38828,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LANYARDS-08",
+          "name": "Jacquard · cierre · 200 uds",
+          "lot_units": 200,
+          "net_lot_cents": 55569,
+          "gross_lot_cents": 67238,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "pulseras",
+      "name": "Pulseras",
+      "source_page": 10,
+      "price_kind": "orientativa",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-PULSERAS-01",
+          "name": "Tela sublimada · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 2479,
+          "gross_lot_cents": 3000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-PULSERAS-02",
+          "name": "Tela sublimada · 200 uds",
+          "lot_units": 200,
+          "net_lot_cents": 4959,
+          "gross_lot_cents": 6000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-PULSERAS-03",
+          "name": "Tela sublimada · 500 uds",
+          "lot_units": 500,
+          "net_lot_cents": 10744,
+          "gross_lot_cents": 13000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-PULSERAS-04",
+          "name": "Tela sublimada · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 20661,
+          "gross_lot_cents": 25000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-PULSERAS-05",
+          "name": "Tyvek · 500 uds",
+          "lot_units": 500,
+          "net_lot_cents": 3719,
+          "gross_lot_cents": 4500,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-PULSERAS-06",
+          "name": "Tyvek · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 4545,
+          "gross_lot_cents": 5500,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "abanicos-poliester",
+      "name": "Abanicos poliéster, varillas negras, 1 tinta",
+      "source_page": 11,
+      "price_kind": "cerrada",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-ABANICOS-POLIESTER-01",
+          "name": "Poliéster · 200 uds",
+          "lot_units": 200,
+          "net_lot_cents": 48590,
+          "gross_lot_cents": 58794,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-ABANICOS-POLIESTER-02",
+          "name": "Poliéster · 500 uds",
+          "lot_units": 500,
+          "net_lot_cents": 109502,
+          "gross_lot_cents": 132497,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-ABANICOS-POLIESTER-03",
+          "name": "Poliéster · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 180765,
+          "gross_lot_cents": 218726,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "abanicos-otras-gamas",
+      "name": "Abanicos otras gamas",
+      "source_page": 11,
+      "price_kind": "orientativa",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-ABANICOS-OTRAS-GAMAS-01",
+          "name": "Estándar · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 24380,
+          "gross_lot_cents": 29500,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-ABANICOS-OTRAS-GAMAS-02",
+          "name": "Estándar · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 206612,
+          "gross_lot_cents": 250000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-ABANICOS-OTRAS-GAMAS-03",
+          "name": "Neón premium · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 28926,
+          "gross_lot_cents": 35000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-ABANICOS-OTRAS-GAMAS-04",
+          "name": "Neón premium · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 239669,
+          "gross_lot_cents": 290000,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "mecheros",
+      "name": "Mecheros Clipper",
+      "source_page": 12,
+      "price_kind": "cerrada",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-MECHEROS-01",
+          "name": "1 tinta · 200 uds",
+          "lot_units": 200,
+          "net_lot_cents": 27759,
+          "gross_lot_cents": 33588,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-MECHEROS-02",
+          "name": "Con funda silicona · 600 uds",
+          "lot_units": 600,
+          "net_lot_cents": 162225,
+          "gross_lot_cents": 196292,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "llaveros-silicona",
+      "name": "Llaveros de silicona 3D",
+      "source_page": 14,
+      "price_kind": "cerrada",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-LLAVEROS-SILICONA-01",
+          "name": "Silicona 3D · 500 uds",
+          "lot_units": 500,
+          "net_lot_cents": 36914,
+          "gross_lot_cents": 44666,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LLAVEROS-SILICONA-02",
+          "name": "Silicona 3D · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 62284,
+          "gross_lot_cents": 75364,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "llaveros-otros",
+      "name": "Llaveros otros materiales",
+      "source_page": 14,
+      "price_kind": "orientativa",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-LLAVEROS-OTROS-01",
+          "name": "Acrílico · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 13884,
+          "gross_lot_cents": 16800,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LLAVEROS-OTROS-02",
+          "name": "Acrílico · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 128099,
+          "gross_lot_cents": 155000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LLAVEROS-OTROS-03",
+          "name": "PVC premium · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 17438,
+          "gross_lot_cents": 21100,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LLAVEROS-OTROS-04",
+          "name": "PVC premium · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 160331,
+          "gross_lot_cents": 194000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LLAVEROS-OTROS-05",
+          "name": "Cinta + metal · 100 uds",
+          "lot_units": 100,
+          "net_lot_cents": 14793,
+          "gross_lot_cents": 17900,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-LLAVEROS-OTROS-06",
+          "name": "Cinta + metal · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 136364,
+          "gross_lot_cents": 165000,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "pegatinas-estandar",
+      "name": "Pegatinas estándar",
+      "source_page": 15,
+      "price_kind": "cerrada",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-PEGATINAS-ESTANDAR-01",
+          "name": "Estándar · 3000 uds",
+          "lot_units": 3000,
+          "net_lot_cents": 21900,
+          "gross_lot_cents": 26499,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-PEGATINAS-ESTANDAR-02",
+          "name": "Estándar · 6000 uds",
+          "lot_units": 6000,
+          "net_lot_cents": 32656,
+          "gross_lot_cents": 39514,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "pegatinas-otras",
+      "name": "Pegatinas otros materiales",
+      "source_page": 15,
+      "price_kind": "orientativa",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-PEGATINAS-OTRAS-01",
+          "name": "Vinilo · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 6612,
+          "gross_lot_cents": 8000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-PEGATINAS-OTRAS-02",
+          "name": "PVC · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 8264,
+          "gross_lot_cents": 10000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-PEGATINAS-OTRAS-03",
+          "name": "Troquelada · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 10744,
+          "gross_lot_cents": 13000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-PEGATINAS-OTRAS-04",
+          "name": "Epoxy · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 16529,
+          "gross_lot_cents": 20000,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-PEGATINAS-OTRAS-05",
+          "name": "Papel laminado · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 5785,
+          "gross_lot_cents": 7000,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "displays-acrilicos",
+      "name": "Displays acrílicos",
+      "source_page": 17,
+      "price_kind": "orientativa",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-DISPLAYS-ACRILICOS-01",
+          "name": "Pequeño · 1 ud",
+          "lot_units": 1,
+          "net_lot_cents": 1281,
+          "gross_lot_cents": 1550,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-DISPLAYS-ACRILICOS-02",
+          "name": "Premium · 1 ud",
+          "lot_units": 1,
+          "net_lot_cents": 2000,
+          "gross_lot_cents": 2420,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "etiquetas",
+      "name": "Etiquetas colgantes",
+      "source_page": 18,
+      "price_kind": "cerrada",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-ETIQUETAS-01",
+          "name": "Negra 5 × 9 cm · 500 uds",
+          "lot_units": 500,
+          "net_lot_cents": 4828,
+          "gross_lot_cents": 5842,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-ETIQUETAS-02",
+          "name": "Negra 5 × 9 cm · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 7030,
+          "gross_lot_cents": 8506,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-ETIQUETAS-03",
+          "name": "Gris 5 × 12 cm · 500 uds",
+          "lot_units": 500,
+          "net_lot_cents": 9415,
+          "gross_lot_cents": 11392,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-ETIQUETAS-04",
+          "name": "Gris 5 × 12 cm · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 16319,
+          "gross_lot_cents": 19746,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-ETIQUETAS-05",
+          "name": "Pack 11 × 2 + 5 × 9 · 500 uds",
+          "lot_units": 500,
+          "net_lot_cents": 14484,
+          "gross_lot_cents": 17526,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "bolsas-embalaje",
+      "name": "Bolsas de embalaje esmeriladas",
+      "source_page": 18,
+      "price_kind": "cerrada",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": [
+        {
+          "sku": "BMERCH-BOLSAS-EMBALAJE-01",
+          "name": "2 colores · 700 uds",
+          "lot_units": 700,
+          "net_lot_cents": 61564,
+          "gross_lot_cents": 74493,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-BOLSAS-EMBALAJE-02",
+          "name": "2 colores · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 63164,
+          "gross_lot_cents": 76428,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-BOLSAS-EMBALAJE-03",
+          "name": "Plata · 700 uds",
+          "lot_units": 700,
+          "net_lot_cents": 47694,
+          "gross_lot_cents": 57710,
+          "status": "draft"
+        },
+        {
+          "sku": "BMERCH-BOLSAS-EMBALAJE-04",
+          "name": "Plata · 1000 uds",
+          "lot_units": 1000,
+          "net_lot_cents": 49583,
+          "gross_lot_cents": 59995,
+          "status": "draft"
+        }
+      ]
+    },
+    {
+      "slug": "futbol-personalizado",
+      "name": "Equipaciones de fútbol",
+      "source_page": 7,
+      "price_kind": "presupuesto",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": []
+    },
+    {
+      "slug": "bragas-cuello",
+      "name": "Bragas de cuello",
+      "source_page": 13,
+      "price_kind": "presupuesto",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": []
+    },
+    {
+      "slug": "tarjetas-pvc-acreditaciones",
+      "name": "Tarjetas y acreditaciones",
+      "source_page": 16,
+      "price_kind": "presupuesto",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": []
+    },
+    {
+      "slug": "cubos-led",
+      "name": "Cubos LED",
+      "source_page": 17,
+      "price_kind": "presupuesto",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": []
+    },
+    {
+      "slug": "bolsas-envio",
+      "name": "Bolsas de envío adhesivas",
+      "source_page": 18,
+      "price_kind": "presupuesto",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": []
+    },
+    {
+      "slug": "otros-personalizados",
+      "name": "Tote bags, calcetines, chapas, parches, tapones y UV especial",
+      "source_page": 19,
+      "price_kind": "presupuesto",
+      "status": "draft",
+      "sale_mode": "quote_only",
+      "variants": []
+    }
+  ]
+}

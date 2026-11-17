@@ -7,6 +7,7 @@ import { waitUntil } from '@vercel/functions';
 import { registerWorkerTick, DEFAULT_OUTBOX_OPTIONS } from './maintenance.js';
 import { inventoryPort } from './modules/inventory/index.js';
 import { LogEmailSender, ORDER_CONFIRMATION_TOPIC, orderConfirmationHandler, MERCHANT_ORDER_NOTIFICATION_TOPIC, merchantOrderNotificationHandler } from './modules/notifications/email.js';
+import type { EmailSender } from './modules/notifications/email.js';
 import { processOutboxBatch, type OutboxHandler } from './modules/notifications/outbox.js';
 import {
   createOrdersModule,
@@ -24,6 +25,8 @@ export interface AppDeps {
   payments?: PaymentProvider;
   /** Destinatario interno opcional; el sender por defecto solo registra logs. */
   merchantOrderEmail?: string;
+  /** Provider real inyectado, LogEmailSender se reserva a desarrollo. */
+  emailSender?: EmailSender;
   /** URL pública de la tienda (success/cancel de Stripe). */
   appUrl?: string;
   reservationTtlMs?: number;
@@ -53,7 +56,7 @@ export function buildApp(deps: AppDeps = {}): FastifyInstance {
   if (deps.db) {
     const db = deps.db;
     for (const register of modules) register(app, { db });
-    const fallbackSender = new LogEmailSender(app.log);
+    const fallbackSender = deps.emailSender ?? new LogEmailSender(app.log);
     const handlers: Record<string, OutboxHandler> = {
       [ORDER_CONFIRMATION_TOPIC]: orderConfirmationHandler(fallbackSender),
       ...(deps.merchantOrderEmail ? {

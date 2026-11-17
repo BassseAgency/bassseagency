@@ -6,7 +6,7 @@ import { modules } from './modules/index.js';
 import { waitUntil } from '@vercel/functions';
 import { registerWorkerTick, DEFAULT_OUTBOX_OPTIONS } from './maintenance.js';
 import { inventoryPort } from './modules/inventory/index.js';
-import { LogEmailSender, ORDER_CONFIRMATION_TOPIC, orderConfirmationHandler } from './modules/notifications/email.js';
+import { LogEmailSender, ORDER_CONFIRMATION_TOPIC, orderConfirmationHandler, MERCHANT_ORDER_NOTIFICATION_TOPIC, merchantOrderNotificationHandler } from './modules/notifications/email.js';
 import { processOutboxBatch, type OutboxHandler } from './modules/notifications/outbox.js';
 import {
   createOrdersModule,
@@ -22,6 +22,8 @@ export interface AppDeps {
   release?: string;
   /** Proveedor de pagos. Sin él no se registran /checkout ni el webhook. */
   payments?: PaymentProvider;
+  /** Destinatario interno opcional; el sender por defecto solo registra logs. */
+  merchantOrderEmail?: string;
   /** URL pública de la tienda (success/cancel de Stripe). */
   appUrl?: string;
   reservationTtlMs?: number;
@@ -51,8 +53,12 @@ export function buildApp(deps: AppDeps = {}): FastifyInstance {
   if (deps.db) {
     const db = deps.db;
     for (const register of modules) register(app, { db });
+    const fallbackSender = new LogEmailSender(app.log);
     const handlers = deps.outboxHandlers ?? {
-      [ORDER_CONFIRMATION_TOPIC]: orderConfirmationHandler(new LogEmailSender(app.log)),
+      [ORDER_CONFIRMATION_TOPIC]: orderConfirmationHandler(fallbackSender),
+      ...(deps.merchantOrderEmail ? {
+        [MERCHANT_ORDER_NOTIFICATION_TOPIC]: merchantOrderNotificationHandler(fallbackSender, deps.merchantOrderEmail),
+      } : {}),
     };
     if (deps.payments) {
       createOrdersModule({
@@ -61,6 +67,7 @@ export function buildApp(deps: AppDeps = {}): FastifyInstance {
         inventory: inventoryPort,
         reservationTtlMs: deps.reservationTtlMs ?? MIN_RESERVATION_TTL_MS,
         appUrl: deps.appUrl ?? 'http://localhost:3000',
+        merchantNotificationsEnabled: Boolean(deps.merchantOrderEmail),
         delayedPaymentReservationMs: deps.delayedPaymentReservationMs ?? DEFAULT_DELAYED_PAYMENT_RESERVATION_MS,
         // El email de confirmación sale tras responder a Stripe (waitUntil mantiene viva la función
         // en Vercel). Si falla, queda en el outbox y lo reintentan el worker o el cron.

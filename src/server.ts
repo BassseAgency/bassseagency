@@ -39,6 +39,7 @@ const app = buildApp({
   db,
   release: process.env.RELEASE_SHA,
   payments,
+  merchantOrderEmail: process.env.MERCH_ORDER_EMAIL || undefined,
   appUrl: process.env.APP_URL,
   cronSecret: process.env.CRON_SECRET,
   reservationTtlMs: process.env.RESERVATION_TTL_MS ? Number(process.env.RESERVATION_TTL_MS) : undefined,

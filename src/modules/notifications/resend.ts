@@ -14,7 +14,7 @@ export class ResendEmailSender implements EmailSender {
 
   async send(msg: EmailMessage, opts?: { signal?: AbortSignal }): Promise<void> {
     const controller = new AbortController();
-    const abort = () => controller.abort();
+    const abort = () => { controller.abort(); };
     const timer = setTimeout(abort, RESEND_SEND_TIMEOUT_MS);
     opts?.signal?.addEventListener('abort', abort, { once: true });
     try {
@@ -36,7 +36,7 @@ export class ResendEmailSender implements EmailSender {
       });
       if (!response.ok) {
         // No incluir cuerpo de respuesta, datos personales ni API key en errores/logs.
-        throw new Error(`EMAIL_DELIVERY_FAILED: HTTP ${response.status}`);
+        throw new Error(`EMAIL_DELIVERY_FAILED: HTTP ${String(response.status)}`);
       }
     } finally {
       clearTimeout(timer);

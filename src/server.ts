@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import { buildApp } from './app.js';
 import { migrate } from './db/migrate.js';
 import { StripePaymentProvider, stripeConfigFromEnv } from './modules/payments/stripe.js';
+import { ResendEmailSender } from './modules/notifications/resend.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const host = process.env.HOST ?? '0.0.0.0';
@@ -35,11 +36,19 @@ const payments =
     ? new StripePaymentProvider(stripeConfigFromEnv())
     : undefined;
 
+const resendKey = process.env.RESEND_API_KEY;
+const resendFrom = process.env.RESEND_FROM_EMAIL;
+if (Boolean(resendKey) !== Boolean(resendFrom)) {
+  throw new Error('RESEND_API_KEY y RESEND_FROM_EMAIL se configuran juntos');
+}
+const emailSender = resendKey && resendFrom ? new ResendEmailSender(resendKey, resendFrom) : undefined;
+
 const app = buildApp({
   db,
   release: process.env.RELEASE_SHA,
   payments,
   merchantOrderEmail: process.env.MERCH_ORDER_EMAIL || undefined,
+  emailSender,
   appUrl: process.env.APP_URL,
   cronSecret: process.env.CRON_SECRET,
   reservationTtlMs: process.env.RESERVATION_TTL_MS ? Number(process.env.RESERVATION_TTL_MS) : undefined,

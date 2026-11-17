@@ -62,9 +62,6 @@ export function reviewMerchLot(offer: MerchLotOffer, lots: number): LotReview {
   if (!offer.sku.trim()) {
     throw new AppError('VALIDATION', 'INVALID_MERCH_SKU', 'Referencia inválida');
   }
-  if (offer.currency !== 'EUR') {
-    throw new AppError('VALIDATION', 'UNSUPPORTED_CURRENCY', 'Moneda no admitida');
-  }
   safeCents(offer.netLotCents, 'netLotCents');
   safeCents(offer.grossLotCents, 'grossLotCents', false);
   if (offer.grossLotCents < offer.netLotCents) {

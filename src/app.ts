@@ -54,11 +54,12 @@ export function buildApp(deps: AppDeps = {}): FastifyInstance {
     const db = deps.db;
     for (const register of modules) register(app, { db });
     const fallbackSender = new LogEmailSender(app.log);
-    const handlers = deps.outboxHandlers ?? {
+    const handlers: Record<string, OutboxHandler> = {
       [ORDER_CONFIRMATION_TOPIC]: orderConfirmationHandler(fallbackSender),
       ...(deps.merchantOrderEmail ? {
         [MERCHANT_ORDER_NOTIFICATION_TOPIC]: merchantOrderNotificationHandler(fallbackSender, deps.merchantOrderEmail),
       } : {}),
+      ...deps.outboxHandlers,
     };
     if (deps.payments) {
       createOrdersModule({

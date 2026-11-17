@@ -76,6 +76,31 @@ describe.skipIf(!testDbUrl)('carrito', () => {
     expect(res.json<{ error: { code: string } }>().error.code).toBe('VARIANT_NOT_FOUND');
   });
 
+  it('impide añadir variantes de productos que están en borrador', async () => {
+    const id = await newCart();
+    const variant = await seedVariant(pool, { sku: 'DRAFT-REJECT', priceCents: 999 });
+    await pool.query(`update products set status = 'draft' where id = (
+      select product_id from product_variants where id = $1
+    )`, [variant]);
+    const response = await putItem(id, variant, 1);
+    expect(response.statusCode).toBe(404);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('VARIANT_NOT_FOUND');
+  });
+
+  it('bloquea lectura y checkout cuando el producto se archiva tras añadirlo', async () => {
+    const id = await newCart();
+    const variant = await seedVariant(pool, { sku: 'ARCHIVE-REJECT', priceCents: 1999 });
+    expect((await putItem(id, variant, 1)).statusCode).toBe(200);
+    await pool.query(`update products set status = 'archived' where id = (
+      select product_id from product_variants where id = $1
+    )`, [variant]);
+    const response = await app.inject({ method: 'GET', url: `/carts/${id}` });
+    expect(response.statusCode).toBe(409);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('PRODUCT_UNAVAILABLE');
+    await expect(withTransaction(pool, (client) => cartPort.getCartLines(client, id)))
+      .rejects.toMatchObject({ code: 'PRODUCT_UNAVAILABLE' });
+  });
+
   it('carrito inexistente → 404 CART_NOT_FOUND', async () => {
     const res = await app.inject({ method: 'GET', url: '/carts/00000000-0000-4000-8000-000000000000' });
     expect(res.statusCode).toBe(404);

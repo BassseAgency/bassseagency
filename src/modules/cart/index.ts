@@ -24,6 +24,7 @@ interface LineRow {
   price_cents: number;
   currency: string;
   quantity: number;
+  product_status: string;
 }
 
 type Queryable = Pick<PoolClient, 'query'>;
@@ -36,12 +37,19 @@ async function assertCartExists(q: Queryable, cartId: string, lock = false): Pro
 async function readLines(q: Queryable, cartId: string): Promise<CartLine[]> {
   await assertCartExists(q, cartId);
   const { rows } = await q.query<LineRow>(
-    `select ci.variant_id, v.sku, v.name, v.price_cents, v.currency, ci.quantity
-     from cart_items ci join product_variants v on v.id = ci.variant_id
+    `select ci.variant_id, v.sku, v.name, v.price_cents, v.currency, ci.quantity,
+            p.status as product_status
+     from cart_items ci
+     join product_variants v on v.id = ci.variant_id
+     join products p on p.id = v.product_id
      where ci.cart_id = $1
-     order by v.sku`,
+     order by v.sku
+     for share of p`,
     [cartId],
   );
+  if (rows.some((r) => r.product_status !== 'active')) {
+    throw new AppError('CONFLICT', 'PRODUCT_UNAVAILABLE', 'Uno de los productos del carrito no está disponible');
+  }
   return rows.map((r) => ({
     variantId: r.variant_id,
     sku: r.sku,
@@ -77,7 +85,9 @@ export async function setCartItem(db: Pool, cartId: string, variantId: string, q
     if (quantity === 0) {
       await client.query('delete from cart_items where cart_id = $1 and variant_id = $2', [cartId, variantId]);
     } else {
-      const { rowCount } = await client.query('select 1 from product_variants where id = $1', [variantId]);
+      const { rowCount } = await client.query(`select 1 from product_variants v
+          join products p on p.id = v.product_id
+          where v.id = $1 and p.status = 'active'`, [variantId]);
       if (rowCount === 0) throw new AppError('NOT_FOUND', 'VARIANT_NOT_FOUND', 'Variante no encontrada');
       await client.query(
         `insert into cart_items (cart_id, variant_id, quantity) values ($1, $2, $3)

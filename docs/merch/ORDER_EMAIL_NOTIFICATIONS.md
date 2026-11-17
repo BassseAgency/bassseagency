@@ -9,7 +9,7 @@ No se incluyen datos de clientes en el asunto de la notificación. El enlace de 
 ## Adaptador Resend (opcional)
 - Crear/verificar un dominio remitente autorizado en Resend y configurar DNS SPF/DKIM/DMARC antes de enviar correos comerciales.
 - Configurar en **servidor** `RESEND_API_KEY` y `RESEND_FROM_EMAIL`; ambos son obligatorios para seleccionar el adaptador real. Si faltan, se conserva el sender de logs. No subirlos a Git.
-- Configurar `MERCH_ORDER_EMAIL=info.bassse@gmail.com` para el aviso interno solo si corresponde al buzón operativo.
+- Configurar `MERCH_ORDER_EMAIL=info@bassse.com` para el aviso interno solo si corresponde al buzón operativo.
 - Verificar entregas en staging, rebotes, eventos y alertas antes de habilitar en producción.
 - El adaptador usa `POST https://api.resend.com/emails`, `Idempotency-Key` y timeout de 4 segundos. Según Resend, su cache de idempotencia dura 24 horas, así que los reintentos posteriores requieren controles operativos adicionales.
 - Documentación oficial: https://resend.com/changelog/idempotency-keys y https://resend.com/docs/api-reference/emails/send-email

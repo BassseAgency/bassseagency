@@ -65,3 +65,21 @@ export function orderConfirmationHandler(sender: EmailSender): OutboxHandler {
     );
   };
 }
+
+export const MERCHANT_ORDER_NOTIFICATION_TOPIC = 'email.merchant_new_order';
+
+const merchantOrderPayload = z.object({ orderId: z.string().uuid() });
+
+/** Aviso interno tras pago confirmado; no sustituye al panel ni al visto bueno de artes. */
+export function merchantOrderNotificationHandler(sender: EmailSender, recipient: string): OutboxHandler {
+  const to = z.string().email().parse(recipient);
+  return async (payload, ctx) => {
+    const { orderId } = merchantOrderPayload.parse(payload);
+    await sender.send({
+      to,
+      subject: `BASSSE Merch · Nuevo pedido pagado ${orderId}`,
+      text: `Pago confirmado del pedido ${orderId}. Revisa el pedido en el panel privado antes de iniciar producción. La aprobación del arte sigue siendo obligatoria.`,
+      idempotencyKey: `order:${orderId}:merchant_notification`,
+    }, { signal: ctx.signal });
+  };
+}

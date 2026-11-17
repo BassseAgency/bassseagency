@@ -24,6 +24,8 @@ export interface OrdersModuleDeps {
   reservationTtlMs: number;
   /** URL pública de la tienda, para success/cancel de Stripe. */
   appUrl: string;
+  /** Encola aviso interno solo si hay destino y handler configurado. */
+  merchantNotificationsEnabled?: boolean;
   /**
    * Duración de la reserva mientras se espera un pago diferido (transferencia), contada desde
    * el checkout.session.completed con payment_status unpaid. Si vence sin pago, el worker cancela el pedido.
@@ -281,6 +283,13 @@ async function handleWebhook(
         dedupeKey: `order:${order.id}:confirmation`,
         payload: { orderId: order.id, email: order.email },
       });
+      if (deps.merchantNotificationsEnabled) {
+        await enqueueOutbox(client, {
+          topic: 'email.merchant_new_order',
+          dedupeKey: `order:${order.id}:merchant_notification`,
+          payload: { orderId: order.id },
+        });
+      }
     } else if (next === 'cancelled') {
       await deps.inventory.release(client, order.id);
     }

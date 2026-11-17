@@ -40,6 +40,7 @@ const app = buildApp({
   release: process.env.RELEASE_SHA,
   payments,
   appUrl: process.env.APP_URL,
+  merchQuotesEnabled: process.env.MERCH_QUOTES_ENABLED === 'true',
   cronSecret: process.env.CRON_SECRET,
   reservationTtlMs: process.env.RESERVATION_TTL_MS ? Number(process.env.RESERVATION_TTL_MS) : undefined,
 });

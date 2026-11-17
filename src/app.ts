@@ -14,6 +14,7 @@ import {
   MIN_RESERVATION_TTL_MS,
 } from './modules/orders/index.js';
 import type { PaymentProvider } from './modules/payments/provider.js';
+import { registerMerchStorefrontPreview } from './modules/merch/storefront.js';
 
 export interface AppDeps {
   /** Pool de Postgres. Si no se pasa, /health/ready reporta `database: "not_configured"`. */
@@ -22,6 +23,8 @@ export interface AppDeps {
   release?: string;
   /** Proveedor de pagos. Sin él no se registran /checkout ni el webhook. */
   payments?: PaymentProvider;
+  /** Landing Merch de solo lectura; desactivada por defecto. */
+  merchStorefrontPreviewEnabled?: boolean;
   /** URL pública de la tienda (success/cancel de Stripe). */
   appUrl?: string;
   reservationTtlMs?: number;
@@ -47,6 +50,7 @@ export function buildApp(deps: AppDeps = {}): FastifyInstance {
   });
 
   registerErrorHandler(app);
+  if (deps.merchStorefrontPreviewEnabled === true) registerMerchStorefrontPreview(app);
 
   if (deps.db) {
     const db = deps.db;

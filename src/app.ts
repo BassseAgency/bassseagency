@@ -14,6 +14,7 @@ import {
   MIN_RESERVATION_TTL_MS,
 } from './modules/orders/index.js';
 import type { PaymentProvider } from './modules/payments/provider.js';
+import { registerMerchQuoteIntake } from './modules/merch/quotes.js';
 
 export interface AppDeps {
   /** Pool de Postgres. Si no se pasa, /health/ready reporta `database: "not_configured"`. */
@@ -22,6 +23,8 @@ export interface AppDeps {
   release?: string;
   /** Proveedor de pagos. Sin él no se registran /checkout ni el webhook. */
   payments?: PaymentProvider;
+  /** Quote-only intake (disabled by default until privacy/anti-abuse review). */
+  merchQuotesEnabled?: boolean;
   /** URL pública de la tienda (success/cancel de Stripe). */
   appUrl?: string;
   reservationTtlMs?: number;
@@ -51,6 +54,7 @@ export function buildApp(deps: AppDeps = {}): FastifyInstance {
   if (deps.db) {
     const db = deps.db;
     for (const register of modules) register(app, { db });
+    if (deps.merchQuotesEnabled === true) registerMerchQuoteIntake(app, db);
     const handlers = deps.outboxHandlers ?? {
       [ORDER_CONFIRMATION_TOPIC]: orderConfirmationHandler(new LogEmailSender(app.log)),
     };
